@@ -1,0 +1,33 @@
+# Local tournament state, participant data, and research outputs
+/data/
+/manual-tournament-archives/
+/papp-internal-workfile.txt
+/AGENTS.md
+
+# Local WeChat exports, keys, and third-party source without a redistribution notice
+/third_party/wechat-decrypt/
+
+# Player-analysis research assets; not a PAPP runtime dependency
+/third_party/player-analysis-toolkit/
+
+# Local Python runtime and wheelhouse (includes files above GitHub's per-file limit)
+/vendor/python/
+
+# Microsoft runtime is licensed separately from the bundled Egaroucid engine
+/vendor/engines/Egaroucid_for_Console_7_8_1_Windows_AVX512_AMD/msvcp140.dll
+
+# Generated binaries and build products
+/bin/
+*.o
+
+# Local interpreter/build artifacts
+**/__pycache__/
+*.py[cod]
+.env
+.env.*
+*.db
+*.sqlite
+*.sqlite3
+
+# Launcher for the excluded local WeChat-decrypt subtree
+/papp-wechat-decrypt.cmd

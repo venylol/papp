@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="zh-Hans">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#F3F9F1" />
+    <meta name="application-name" content="PAPP · 多人哨兵分析" />
+    <title>PAPP · 多人哨兵分析</title>
+    <link rel="icon" href="../../icons/favicon-32.png" sizes="32x32" />
+    <link rel="stylesheet" href="../../styles.css?v=papp-portal.2" />
+    <link rel="stylesheet" href="../styles.css?v=papp-portal.2" />
+    <link rel="stylesheet" href="./player-investigation.css?v=papp-portal.14" />
+  </head>
+  <body class="papp-portal-body">
+    <div class="papp-portal-shell">
+      <header class="papp-portal-header" role="banner">
+        <a class="papp-portal-brand" href="./" aria-label="返回选手调查">
+          <span class="papp-portal-mark" aria-hidden="true">P</span>
+          <span>
+            <span class="papp-portal-brand__name">PAPP</span>
+            <span class="papp-portal-brand__sub">多人哨兵分析</span>
+          </span>
+        </a>
+        <a class="papp-portal-back" href="./">返回选手调查</a>
+      </header>
+
+      <main class="papp-portal-main papp-investigation-main">
+        <div class="papp-portal-kicker">PLAYER INVESTIGATION · BATCH SENTINEL</div>
+        <h1 class="papp-portal-title" id="batch-title">多人哨兵分析</h1>
+        <p class="papp-portal-lead">任务按比赛名次顺次运行。单名选手失败时会记录原因并继续下一位。</p>
+
+        <section class="papp-investigation-card investigation-analysis-card" aria-labelledby="batch-state-title">
+          <div class="papp-portal-panel__topline">
+            <span class="papp-portal-status">往期比赛调查</span>
+            <span class="investigation-analysis__status-badge" id="batch-status-badge">连接中</span>
+          </div>
+          <h2 id="batch-state-title">任务状态</h2>
+          <div class="investigation-analysis__identity">
+            <div><span>比赛</span><strong id="batch-tournament">—</strong></div>
+            <div><span>批量任务 ID</span><strong id="batch-id">—</strong></div>
+            <div><span>当前选手</span><strong id="batch-current-player">—</strong></div>
+            <div><span>报告文件</span><strong id="batch-report-path">任务完成后生成</strong></div>
+          </div>
+
+          <section class="investigation-analysis__progress" aria-labelledby="batch-progress-title">
+            <div class="investigation-analysis__progress-header">
+              <h2 id="batch-progress-title">整体进度</h2>
+              <span class="investigation-analysis__progress-label" id="batch-progress-label">0 / 0</span>
+            </div>
+            <div class="investigation-analysis__progress-track" id="batch-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="多人哨兵分析进度">
+              <div class="investigation-analysis__progress-fill" id="batch-progress-fill"></div>
+            </div>
+            <p class="investigation-analysis__message" id="batch-message" role="status" aria-live="polite">正在连接本地任务…</p>
+          </section>
+
+          <section class="investigation-analysis__report investigation-result" id="batch-report" aria-live="polite">
+            <div class="investigation-profile__title">
+              <h3>汇总报告</h3>
+              <span class="investigation-success" id="batch-report-status">运行中</span>
+            </div>
+            <p class="investigation-analysis__report-detail" id="batch-report-detail">完成的选手结果会依次出现在这里。</p>
+            <div class="investigation-analysis__report-sections" id="batch-result-list"></div>
+          </section>
+
+          <div class="investigation-analysis__actions">
+            <a class="papp-portal-action investigation-analysis__back" href="./">返回调查入口</a>
+          </div>
+          <p class="investigation-analysis__message" id="batch-error" role="alert"></p>
+        </section>
+      </main>
+      <footer class="papp-portal-footer">PAPP · Player investigation workspace</footer>
+    </div>
+    <script defer src="./batch-analysis.js?v=papp-portal.1"></script>
+  </body>
+</html>

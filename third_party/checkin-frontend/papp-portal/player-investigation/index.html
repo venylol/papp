@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="zh-Hans">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#F3F9F1" />
+    <meta name="application-name" content="PAPP · 选手调查" />
+    <title>PAPP · 选手调查</title>
+    <link rel="icon" href="../../icons/favicon-32.png" sizes="32x32" />
+    <link rel="stylesheet" href="../../styles.css?v=papp-portal.2" />
+    <link rel="stylesheet" href="../styles.css?v=papp-portal.2" />
+    <link rel="stylesheet" href="./player-investigation.css?v=papp-portal.14" />
+  </head>
+
+  <body class="papp-portal-body">
+    <div class="papp-portal-shell">
+      <header class="papp-portal-header" role="banner">
+        <a class="papp-portal-brand" href="../" aria-label="返回 PAPP 工作区选择">
+          <span class="papp-portal-mark" aria-hidden="true">P</span>
+          <span>
+            <span class="papp-portal-brand__name">PAPP</span>
+            <span class="papp-portal-brand__sub">选手调查</span>
+          </span>
+        </a>
+        <a class="papp-portal-back" href="../">返回工作区选择</a>
+      </header>
+
+      <main class="papp-portal-main papp-investigation-main">
+        <div class="papp-portal-kicker">PLAYER INVESTIGATION</div>
+        <h1 class="papp-portal-title">选手调查</h1>
+        <p class="papp-portal-lead">
+          这是选手资料、调查记录与后续分析功能的独立工作区。
+        </p>
+        <p class="investigation-analysis__appendix-link">
+          <a href="#investigation-appendix">查看附录：模型表现与黑白桶样本量</a>
+        </p>
+
+        <section class="papp-investigation-card" aria-labelledby="investigation-status-title">
+          <div class="papp-portal-panel__topline">
+            <span class="papp-portal-status">五分钟水平调查</span>
+            <span class="papp-portal-panel__scope">独立于比赛编排</span>
+          </div>
+          <h2 id="investigation-status-title">选择调查方式</h2>
+          <div class="investigation-mode-grid" id="investigation-mode-grid" role="tablist" aria-label="调查方式">
+            <button class="investigation-mode" id="btn-investigation-past" type="button" role="tab" aria-selected="false" data-investigation-mode="past">
+              <span class="investigation-mode__number">1</span>
+              <span class="investigation-mode__content">
+                <strong>往期比赛调查</strong>
+                <small>使用已有比赛记录进行调查</small>
+              </span>
+            </button>
+            <button class="investigation-mode investigation-mode--active" id="btn-investigation-id" type="button" role="tab" aria-selected="true" data-investigation-mode="id">
+              <span class="investigation-mode__number">2</span>
+              <span class="investigation-mode__content">
+                <strong>指定 ID 调查</strong>
+                <small>输入 OQ ID，确认 5 分钟 Player 画像</small>
+              </span>
+            </button>
+          </div>
+
+          <section class="investigation-panel" id="investigation-past-panel" role="tabpanel" hidden>
+            <div class="investigation-panel__header">
+              <div>
+                <div class="investigation-panel__eyebrow">模式 1</div>
+                <h3>往期比赛调查</h3>
+                <p>从已完赛的比赛存档中选择选手，再执行哨兵分析或举报局分析。</p>
+              </div>
+              <button class="investigation-link-button" id="btn-past-refresh" type="button">刷新比赛列表</button>
+            </div>
+            <div class="investigation-query-status" id="past-investigation-status" role="status" aria-live="polite"></div>
+
+            <div class="past-tournament-list" id="past-tournament-list" aria-live="polite"></div>
+
+            <section class="past-tournament-detail hidden" id="past-tournament-detail" aria-labelledby="past-tournament-title">
+              <div class="investigation-panel__header">
+                <div>
+                  <div class="investigation-panel__eyebrow">正式总排名</div>
+                  <h3 id="past-tournament-title">—</h3>
+                  <p id="past-tournament-meta"></p>
+                </div>
+                <button class="investigation-link-button" id="btn-past-back" type="button">返回比赛列表</button>
+              </div>
+              <div class="past-player-toolbar">
+                <span id="past-player-selection-count">已选择 0 位选手</span>
+                <button class="investigation-link-button" id="btn-past-clear-selection" type="button">清空选择</button>
+              </div>
+              <div class="past-player-list" id="past-player-list"></div>
+              <div class="past-investigation-actions">
+                <button class="papp-portal-action" id="btn-past-sentinel" type="button" disabled>
+                  执行哨兵分析
+                </button>
+                <button class="papp-portal-action past-investigation-actions__reported" id="btn-past-reported" type="button" disabled>
+                  执行举报局分析
+                </button>
+              </div>
+              <p class="investigation-note">哨兵分析可多选，将按比赛名次依次分析每位选手最近 30 局五分钟对局并汇总报告；举报局分析必须只选择一位选手。</p>
+            </section>
+
+            <section class="past-batch-status hidden" id="past-batch-status" aria-live="polite">
+              <div class="investigation-profile__title">
+                <h3>多人哨兵分析</h3>
+                <span class="investigation-success" id="past-batch-status-badge">已提交</span>
+              </div>
+              <p id="past-batch-status-detail"></p>
+            </section>
+          </section>
+
+          <section class="investigation-panel investigation-panel--id" id="investigation-id-panel" role="tabpanel">
+            <div class="investigation-panel__header">
+              <div>
+                <div class="investigation-panel__eyebrow">模式 2</div>
+                <h3>指定 ID 调查</h3>
+                <p>输入 OQ ID，查询成功后确认以下 5 分钟画像信息。</p>
+              </div>
+              <span class="investigation-time-chip">5 分钟</span>
+            </div>
+
+            <form class="investigation-query" id="investigation-query-form">
+              <label class="investigation-field" for="investigation-account-input">
+                <span>OQ ID</span>
+                <input id="investigation-account-input" type="text" maxlength="64" placeholder="请输入 OQ ID" autocomplete="off" spellcheck="false" required />
+              </label>
+              <button class="papp-portal-action investigation-query__button" id="btn-investigation-query" type="submit">查询画像</button>
+            </form>
+            <div class="investigation-query-status" id="investigation-query-status" role="status" aria-live="polite"></div>
+
+            <div class="investigation-profile hidden" id="investigation-profile" aria-live="polite">
+              <div class="investigation-profile__title">
+                <h3>5 分钟 Player 画像</h3>
+                <span class="investigation-success">查询成功</span>
+              </div>
+              <div class="investigation-profile__grid investigation-profile__grid--identity">
+                <div><span>OQ ID</span><strong id="profile-id">—</strong></div>
+                <div><span>Player 名称</span><strong id="profile-name">—</strong></div>
+              </div>
+              <div class="investigation-profile__grid investigation-profile__grid--overall">
+                <div><span>当前等级分</span><strong id="profile-rating">—</strong></div>
+                <div><span>最高等级分</span><strong id="profile-high">—</strong></div>
+              </div>
+            <div class="investigation-record">
+              <div class="investigation-record__title">总战绩</div>
+              <div class="investigation-record__grid">
+                <div><span>总局数</span><strong id="profile-played">—</strong></div>
+                  <div><span>胜</span><strong id="profile-win">—</strong></div>
+                  <div><span>负</span><strong id="profile-loss">—</strong></div>
+                  <div><span>和</span><strong id="profile-draw">—</strong></div>
+                </div>
+              </div>
+              <div class="investigation-profile__actions">
+                <button class="papp-portal-action investigation-confirm__button" id="btn-investigation-confirm" type="button" disabled>
+                  确认选手并拉取全部对局
+                </button>
+              </div>
+            </div>
+
+            <section class="investigation-games hidden" id="investigation-games" aria-labelledby="investigation-games-title">
+              <div class="investigation-panel__header">
+                <div>
+                  <div class="investigation-panel__eyebrow">对局已拉取</div>
+                  <h3 id="investigation-games-title">选择调查流程</h3>
+                  <p>可以手动设定举报局，也可以自动运行哨兵监测完整流程。</p>
+                </div>
+                <span class="investigation-time-chip" id="investigation-games-count">0 局</span>
+              </div>
+
+              <div class="investigation-workflow-grid hidden" id="investigation-workflow-choices">
+                <button class="investigation-workflow-choice" id="btn-investigation-manual" type="button">
+                  <strong>设定举报局</strong>
+                  <small>手动勾选举报局，未勾选的对局作为对照局。</small>
+                </button>
+                <button class="investigation-workflow-choice investigation-workflow-choice--sentinel" id="btn-investigation-sentinel" type="button">
+                  <strong>哨兵监测模式</strong>
+                  <small>自动分析最近 30 局，完成传统哨兵、Elo 估值、举报局拟定及后续流程。</small>
+                </button>
+              </div>
+
+              <div class="investigation-games-status" id="investigation-games-status" role="status" aria-live="polite"></div>
+
+              <section class="investigation-manual-panel hidden" id="investigation-manual-panel" aria-labelledby="investigation-manual-title">
+                <div class="investigation-panel__header">
+                  <div>
+                    <div class="investigation-panel__eyebrow">手动分组</div>
+                    <h3 id="investigation-manual-title">设定举报局</h3>
+                    <p>勾选的对局作为举报局，未勾选的对局作为对照局。</p>
+                  </div>
+                  <button class="investigation-link-button" id="btn-investigation-back-to-choices" type="button">返回流程选择</button>
+                </div>
+                <div class="investigation-games__toolbar">
+                  <span id="investigation-selection-count">举报局 0 · 对照局 0</span>
+                  <button class="investigation-link-button" id="btn-investigation-clear-selection" type="button">清空勾选</button>
+                </div>
+                <div class="investigation-games__table-wrap">
+                  <table class="investigation-games__table">
+                    <thead>
+                      <tr>
+                        <th scope="col">举报局</th>
+                        <th scope="col">对手</th>
+                        <th scope="col">结果</th>
+                        <th scope="col">比赛时间（中国时间）</th>
+                      </tr>
+                    </thead>
+                    <tbody id="investigation-games-body"></tbody>
+                  </table>
+                </div>
+                <button class="papp-portal-action investigation-run__button" id="btn-investigation-run" type="button" disabled>
+                  开始分析
+                </button>
+                <p class="investigation-note">提交后按 toolkit 的正常举报局/对照局流程运行；本次分组会被固定。</p>
+              </div>
+            </section>
+
+            <section class="investigation-result hidden" id="investigation-result" aria-live="polite">
+              <div class="investigation-profile__title">
+                <h3>调查流程</h3>
+                <span class="investigation-success" id="investigation-result-status">—</span>
+              </div>
+              <p id="investigation-result-detail"></p>
+            </section>
+          </section>
+        </section>
+
+        <section class="papp-investigation-card investigation-analysis__appendix" id="investigation-appendix" aria-labelledby="investigation-appendix-title">
+          <div class="papp-portal-panel__topline">
+            <span class="papp-portal-status">调查附录</span>
+            <span class="papp-portal-panel__scope">固定登记快照</span>
+          </div>
+          <h2 id="investigation-appendix-title">模型表现与黑白桶样本量</h2>
+          <p class="investigation-analysis__report-note">
+            当前 active 主模型使用 11,200 局训练数据，是 12 成员的 full-31 8×8 棋盘 CNN + 因果 TCN 集成。模型预测棋盘损失级别与第 39 手后的 WLD，不是作弊分类器；以下是固定测试集表现，不代表当前选手的个人概率。黑白参考库快照日期为 2026-09-11。
+          </p>
+
+          <section class="investigation-analysis__appendix-section" aria-labelledby="analysis-appendix-model-title">
+            <h4 id="analysis-appendix-model-title">当前主模型：固定测试集表现</h4>
+            <p class="investigation-analysis__report-note">
+              子损严重度四分类交叉熵为 0.7078。阈值指标基于 66,956 个已标注棋盘位置；WLD 指标仅基于第 39 手及以后有标签的位置。
+            </p>
+            <div class="investigation-analysis__table-wrap">
+              <table class="investigation-analysis__table">
+                <thead>
+                  <tr>
+                    <th scope="col">评估任务</th>
+                    <th scope="col">测试位置数</th>
+                    <th scope="col">测试指标</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th scope="row">零子损</th>
+                    <td>66,956</td>
+                    <td>PR-AUC 0.8985；ROC-AUC 0.7908；Log loss 0.4952</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">子损 ≥4</th>
+                    <td>66,956</td>
+                    <td>PR-AUC 0.4883；ROC-AUC 0.8243；Log loss 0.3512</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">子损 ≥10</th>
+                    <td>66,956</td>
+                    <td>PR-AUC 0.2995；ROC-AUC 0.8749；Log loss 0.1353</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">第 39 手后 WLD</th>
+                    <td>23,780</td>
+                    <td>准确率 94.47%；交叉熵 0.1798；期望 WLD 子损 MAE 0.0620</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="investigation-analysis__appendix-section" aria-labelledby="analysis-appendix-buckets-title">
+            <h4 id="analysis-appendix-buckets-title">当前哨兵参考库：黑白 Rating 桶对局数</h4>
+            <p class="investigation-analysis__report-note">
+              数据库共 21,615 局已完成引擎分析，其中黑白 Rating 主矩阵 21,499 局，另有 116 局低 Rating 扩展不属于下表 9×9 桶矩阵。81 个有向黑方桶 × 白方桶中，23 个达到每桶 600 局目标，58 个因可用样本容量耗尽而不足。
+            </p>
+            <div class="investigation-analysis__table-wrap">
+                <table class="investigation-analysis__table investigation-analysis__appendix-matrix">
+                  <caption>每格为实际对局数；行是黑方 Rating，列是白方 Rating。Rating 桶按左闭右开计，最末桶包含上界。</caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">黑方 \ 白方</th>
+                      <th scope="col">[1600, 1700)</th>
+                      <th scope="col">[1700, 1800)</th>
+                      <th scope="col">[1800, 1900)</th>
+                      <th scope="col">[1900, 2000)</th>
+                      <th scope="col">[2000, 2100)</th>
+                      <th scope="col">[2100, 2200)</th>
+                      <th scope="col">[2200, 2300)</th>
+                      <th scope="col">[2300, 2400)</th>
+                      <th scope="col">[2400, 2571]</th>
+                      <th scope="col">行合计</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <th scope="row">[1600, 1700)</th>
+                      <td>600</td><td>600</td><td>600</td><td>600</td><td>274</td><td>55</td><td>19</td><td>4</td><td>2</td><td>2,754</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">[1700, 1800)</th>
+                      <td>600</td><td>600</td><td>600</td><td>600</td><td>600</td><td>300</td><td>92</td><td>24</td><td>5</td><td>3,421</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">[1800, 1900)</th>
+                      <td>600</td><td>600</td><td>600</td><td>600</td><td>600</td><td>431</td><td>195</td><td>69</td><td>17</td><td>3,712</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">[1900, 2000)</th>
+                      <td>600</td><td>600</td><td>600</td><td>600</td><td>600</td><td>582</td><td>250</td><td>132</td><td>30</td><td>3,994</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">[2000, 2100)</th>
+                      <td>244</td><td>600</td><td>600</td><td>600</td><td>600</td><td>467</td><td>214</td><td>118</td><td>35</td><td>3,478</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">[2100, 2200)</th>
+                      <td>62</td><td>248</td><td>433</td><td>559</td><td>465</td><td>401</td><td>149</td><td>97</td><td>34</td><td>2,448</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">[2200, 2300)</th>
+                      <td>15</td><td>89</td><td>176</td><td>218</td><td>211</td><td>153</td><td>75</td><td>58</td><td>10</td><td>1,005</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">[2300, 2400)</th>
+                      <td>4</td><td>20</td><td>72</td><td>107</td><td>122</td><td>95</td><td>50</td><td>43</td><td>16</td><td>529</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">[2400, 2571]</th>
+                      <td>3</td><td>3</td><td>12</td><td>33</td><td>42</td><td>27</td><td>17</td><td>12</td><td>9</td><td>158</td>
+                    </tr>
+                    <tr class="investigation-analysis__appendix-total-row">
+                      <th scope="row">列合计</th>
+                      <td>2,728</td><td>3,360</td><td>3,693</td><td>3,917</td><td>3,514</td><td>2,511</td><td>1,061</td><td>557</td><td>158</td><td>21,499</td>
+                    </tr>
+                  </tbody>
+                </table>
+            </div>
+          </section>
+
+        </section>
+      </main>
+
+      <footer class="papp-portal-footer">PAPP · Player investigation workspace</footer>
+    </div>
+    <script defer src="./player-investigation.js?v=papp-portal.9"></script>
+  </body>
+</html>

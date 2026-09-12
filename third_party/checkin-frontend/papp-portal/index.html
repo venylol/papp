@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="zh-Hans">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#F3F9F1" />
+    <meta name="application-name" content="PAPP" />
+    <title>PAPP · 选择工作区</title>
+    <link rel="icon" href="../icons/favicon-32.png" sizes="32x32" />
+    <link rel="stylesheet" href="../styles.css?v=papp-portal.1" />
+    <link rel="stylesheet" href="./styles.css?v=papp-portal.1" />
+  </head>
+
+  <body class="papp-portal-body">
+    <div class="papp-portal-shell">
+      <header class="papp-portal-header" role="banner">
+        <a class="papp-portal-brand" href="./" aria-label="PAPP 首页">
+          <span class="papp-portal-mark" aria-hidden="true">P</span>
+          <span>
+            <span class="papp-portal-brand__name">PAPP</span>
+            <span class="papp-portal-brand__sub">本地比赛工具</span>
+          </span>
+        </a>
+        <span class="papp-portal-local-state">本地运行 · 不上传数据</span>
+      </header>
+
+      <main class="papp-portal-main">
+        <div class="papp-portal-kicker">PAPP WORKSPACE</div>
+        <h1 class="papp-portal-title">选择工作区</h1>
+        <p class="papp-portal-lead">
+          从这里进入比赛编排，或打开独立的选手调查工作区。两个模块各自维护，后续功能不会混入比赛编排目录。
+        </p>
+
+        <section class="papp-mode-grid" aria-label="工作区选项">
+          <a
+            class="papp-mode-card papp-mode-card--primary"
+            href="../"
+            target="_blank"
+            rel="noopener"
+          >
+            <span class="papp-mode-card__number" aria-hidden="true">01</span>
+            <span class="papp-mode-card__content">
+              <span class="papp-mode-card__eyebrow">现有模块</span>
+              <span class="papp-mode-card__title">比赛编排</span>
+              <span class="papp-mode-card__description">
+                进入当前 PAPP 本地服务的比赛管理工作区。
+              </span>
+              <span class="papp-mode-card__path">当前 PAPP 服务 · /</span>
+            </span>
+            <span class="papp-mode-card__arrow" aria-hidden="true">→</span>
+          </a>
+
+          <a
+            class="papp-mode-card papp-mode-card--secondary"
+            href="./player-investigation/"
+          >
+            <span class="papp-mode-card__number" aria-hidden="true">02</span>
+            <span class="papp-mode-card__content">
+              <span class="papp-mode-card__eyebrow">独立工作区 · 5 分钟画像</span>
+              <span class="papp-mode-card__title">选手调查</span>
+              <span class="papp-mode-card__description">
+                选择往期比赛调查或指定 ID 调查，并确认 OQ Player 画像关键信息。
+              </span>
+              <span class="papp-mode-card__path">player-investigation/</span>
+            </span>
+            <span class="papp-mode-card__arrow" aria-hidden="true">→</span>
+          </a>
+        </section>
+
+        <aside class="papp-portal-boundary" aria-label="模块边界说明">
+          <span class="papp-portal-boundary__mark" aria-hidden="true">i</span>
+          <span>
+            比赛编排按钮进入当前 PAPP 本地服务；选手调查页面独立放在本目录下，后续开发不会修改比赛管理文件。
+          </span>
+        </aside>
+      </main>
+
+      <footer class="papp-portal-footer">PAPP · Offline workspace</footer>
+    </div>
+  </body>
+</html>

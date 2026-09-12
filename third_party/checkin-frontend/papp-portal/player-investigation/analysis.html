@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="zh-Hans">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#F3F9F1" />
+    <meta name="application-name" content="PAPP · 选手调查任务" />
+    <title>PAPP · 选手调查任务</title>
+    <link rel="icon" href="../../icons/favicon-32.png" sizes="32x32" />
+    <link rel="stylesheet" href="../../styles.css?v=papp-portal.2" />
+    <link rel="stylesheet" href="../styles.css?v=papp-portal.2" />
+    <link rel="stylesheet" href="./player-investigation.css?v=papp-portal.13" />
+  </head>
+
+  <body class="papp-portal-body">
+    <div class="papp-portal-shell">
+      <header class="papp-portal-header" role="banner">
+        <a class="papp-portal-brand" href="./" aria-label="返回选手调查">
+          <span class="papp-portal-mark" aria-hidden="true">P</span>
+          <span>
+            <span class="papp-portal-brand__name">PAPP</span>
+            <span class="papp-portal-brand__sub" id="analysis-workflow-name">选手调查任务</span>
+          </span>
+        </a>
+        <a class="papp-portal-back" href="./">返回对局选择</a>
+      </header>
+
+      <main class="papp-portal-main papp-investigation-main">
+        <div class="papp-portal-kicker">PLAYER INVESTIGATION · ANALYSIS</div>
+        <h1 class="papp-portal-title" id="analysis-title">选手调查任务</h1>
+        <p class="papp-portal-lead" id="analysis-lead">
+          分析任务正在本机后台运行。页面会持续刷新当前阶段和系统资源状态。
+        </p>
+        <p class="investigation-analysis__appendix-link">
+          <a href="./#investigation-appendix">查看选手调查附录：模型表现与黑白桶样本量</a>
+        </p>
+
+        <section class="papp-investigation-card investigation-analysis-card" aria-labelledby="analysis-task-state-title">
+          <div class="papp-portal-panel__topline">
+            <span class="papp-portal-status">五分钟水平调查</span>
+            <span class="investigation-analysis__status-badge" id="analysis-status-badge">连接中</span>
+          </div>
+          <h2 id="analysis-task-state-title">任务状态</h2>
+
+          <div class="investigation-analysis__identity">
+            <div><span>选手</span><strong id="analysis-account">—</strong></div>
+            <div><span>运行 ID</span><strong id="analysis-run-id">—</strong></div>
+            <div><span>当前阶段</span><strong id="analysis-stage">—</strong></div>
+            <div><span>任务开始</span><strong id="analysis-started-at">—</strong></div>
+          </div>
+
+          <div class="investigation-analysis__resources" aria-label="实时系统资源">
+            <div class="investigation-analysis__resource">
+              <span>CPU</span>
+              <strong id="analysis-cpu">—</strong>
+              <small id="analysis-cpu-detail">等待采样</small>
+            </div>
+            <div class="investigation-analysis__resource">
+              <span>内存</span>
+              <strong id="analysis-memory">—</strong>
+              <small id="analysis-memory-detail">等待采样</small>
+            </div>
+            <div class="investigation-analysis__resource">
+              <span>显卡</span>
+              <strong id="analysis-gpu">—</strong>
+              <small id="analysis-gpu-detail">检测中</small>
+            </div>
+            <div class="investigation-analysis__resource">
+              <span>最近更新</span>
+              <strong id="analysis-updated-at">—</strong>
+              <small>本地服务状态</small>
+            </div>
+          </div>
+
+          <section class="investigation-analysis__progress" aria-labelledby="analysis-progress-title">
+            <div class="investigation-analysis__progress-header">
+              <h2 id="analysis-progress-title">分析进度</h2>
+              <span class="investigation-analysis__progress-label" id="analysis-progress-label">等待状态</span>
+            </div>
+            <div class="investigation-analysis__progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="分析进度">
+              <div class="investigation-analysis__progress-fill" id="analysis-progress-fill"></div>
+            </div>
+            <p class="investigation-analysis__message" id="analysis-message" role="status" aria-live="polite">正在连接本地任务…</p>
+          </section>
+
+          <section class="investigation-analysis__stages" aria-labelledby="analysis-stages-title">
+            <h2 id="analysis-stages-title">流程状态</h2>
+            <div class="investigation-analysis__stage-list" id="analysis-stage-list"></div>
+          </section>
+
+          <section class="investigation-analysis__report investigation-result" id="analysis-report" aria-live="polite" hidden>
+          <div class="investigation-profile__title">
+            <h3>分析结果</h3>
+            <span class="investigation-success" id="analysis-report-status">—</span>
+          </div>
+          <p class="investigation-analysis__report-detail" id="analysis-report-detail"></p>
+          <div class="investigation-analysis__report-sections" id="analysis-report-sections"></div>
+          
+          </section>
+
+          <div class="investigation-analysis__actions">
+            <button class="papp-portal-action investigation-analysis__terminate" id="btn-analysis-terminate" type="button" disabled>
+              终止任务
+            </button>
+            <a class="papp-portal-action investigation-analysis__back" href="./">返回调查入口</a>
+          </div>
+          <p class="investigation-analysis__message" id="analysis-error" role="alert"></p>
+        </section>
+      </main>
+
+      <footer class="papp-portal-footer">PAPP · Player investigation workspace</footer>
+    </div>
+    <script defer src="./analysis.js?v=papp-portal.6"></script>
+  </body>
+</html>
