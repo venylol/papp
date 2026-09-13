@@ -73,6 +73,17 @@
       errorText = "";
       options.onStatus(result.ap || {});
       const ap = result.ap || {};
+      // A stop command is terminal for this modal.  An in-flight coordinator
+      // tick can still briefly echo the countdown that existed before the
+      // stop; never let that stale countdown reopen the dialog.
+      if (!ap.enabled) {
+        lastCountdown = "";
+        confirmedTarget = "";
+        lastPaused = false;
+        if (dialog.open) dialog.close();
+        render();
+        return;
+      }
       const target = ap.countdown ? JSON.stringify(ap.countdown.target) : "";
       const key = ap.countdown ? `${target}:${ap.countdown.deadlineAt}` : "";
       // Confirm sets the server deadline to now; that echo is still the same
@@ -126,7 +137,10 @@
           dialog.close();
         }
         accept(result);
-        if ((action === "enable" || action === "resume") && !result.ap?.countdown) dialog.close();
+        // Stopping AP is a terminal user action for this modal.  Close it
+        // after the server confirms the stop instead of leaving the settings
+        // dialog open with the "开启 AP" action visible.
+        if (action === "stop" || ((action === "enable" || action === "resume") && !result.ap?.countdown)) dialog.close();
       } catch (error) {
         errorText = error.message;
         open();

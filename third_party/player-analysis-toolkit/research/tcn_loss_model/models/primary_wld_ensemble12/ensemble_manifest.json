@@ -1,0 +1,23 @@
+{
+  "schema": "tcn-loss-ensemble-manifest-v1",
+  "status": "completed",
+  "modelSchema": "time-plus-four-class-severity-plus-three-class-wld-oq-profile-v1",
+  "inputPolicy": "uniform-no-current-player-loss-history-v1",
+  "profileAblation": "full-31",
+  "trainingGames": 11200,
+  "selectionMetric": "validation_wld_classification_loss",
+  "members": [
+    {"member": 1, "seed": 42, "bestCheckpoint": "member_01_seed_42_best.pt", "bestCheckpointSha256": "925db1e6c4bd77372f6420c1e29bd4478924d42867185ff54a6c63d1b29facc6", "bytes": 3283981},
+    {"member": 2, "seed": 43, "bestCheckpoint": "member_02_seed_43_best.pt", "bestCheckpointSha256": "1001832e94492f04011b61d9d6165d41930bd242aa8d17999014eec10cf9fcee", "bytes": 3283981},
+    {"member": 3, "seed": 44, "bestCheckpoint": "member_03_seed_44_best.pt", "bestCheckpointSha256": "6153d88a6d8fc7b3d98a41f3e2bb8556d40e21cf6e00527d5508a6a4256e199a", "bytes": 3287189},
+    {"member": 4, "seed": 45, "bestCheckpoint": "member_04_seed_45_best.pt", "bestCheckpointSha256": "0cbafdf2fa98e61bfb41efbafec16952d3cac042b51a07e8ac14baea16cc091e", "bytes": 3284045},
+    {"member": 5, "seed": 46, "bestCheckpoint": "member_05_seed_46_best.pt", "bestCheckpointSha256": "83de3c1146e655e152ef0fa7241734174f548acd474a6bd657169a7155b43217", "bytes": 3283981},
+    {"member": 6, "seed": 47, "bestCheckpoint": "member_06_seed_47_best.pt", "bestCheckpointSha256": "cbcbb19190006d875fe353999c5db751165fb55461b4c6ed6064e55e1bbbaa2b", "bytes": 3283981},
+    {"member": 7, "seed": 48, "bestCheckpoint": "member_07_seed_48_best.pt", "bestCheckpointSha256": "ed52630284afb0e784be6ac6ed9ba93496f20ec6a9d8650edef1e51ea0c50a7d", "bytes": 3287253},
+    {"member": 8, "seed": 49, "bestCheckpoint": "member_08_seed_49_best.pt", "bestCheckpointSha256": "b28f5ab2e13d197b02c923276f72adaa8ba155090eaa76b588b8219a80e8b444", "bytes": 3283981},
+    {"member": 9, "seed": 50, "bestCheckpoint": "member_09_seed_50_best.pt", "bestCheckpointSha256": "c0e2b56320fedfca9949e643aec4a091ed68f88f7dd8200920966dc15650f586", "bytes": 3283981},
+    {"member": 10, "seed": 51, "bestCheckpoint": "member_10_seed_51_best.pt", "bestCheckpointSha256": "3ac4120239a4f31fb65bd139764b589b5161b94ea75e541803e98c5b4351a3c5", "bytes": 3283981},
+    {"member": 11, "seed": 52, "bestCheckpoint": "member_11_seed_52_best.pt", "bestCheckpointSha256": "e1c8b233707204ea7051c3eb02d6cb9adb8f808bcaad00cd920b633ba4bbf4eb", "bytes": 3283917},
+    {"member": 12, "seed": 53, "bestCheckpoint": "member_12_seed_53_best.pt", "bestCheckpointSha256": "8a3b02dab81ba69ae0c6ac4acb88352c0617f4c046091b833ef4f3cec5a0043a", "bytes": 3283981}
+  ]
+}

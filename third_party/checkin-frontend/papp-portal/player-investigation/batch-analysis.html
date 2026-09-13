@@ -10,19 +10,19 @@
     <link rel="icon" href="../../icons/favicon-32.png" sizes="32x32" />
     <link rel="stylesheet" href="../../styles.css?v=papp-portal.2" />
     <link rel="stylesheet" href="../styles.css?v=papp-portal.2" />
-    <link rel="stylesheet" href="./player-investigation.css?v=papp-portal.14" />
+    <link rel="stylesheet" href="./player-investigation.css?v=papp-portal.15" />
   </head>
   <body class="papp-portal-body">
     <div class="papp-portal-shell">
       <header class="papp-portal-header" role="banner">
-        <a class="papp-portal-brand" href="./" aria-label="返回选手调查">
+        <a class="papp-portal-brand" id="batch-brand" href="./" aria-label="返回选手调查">
           <span class="papp-portal-mark" aria-hidden="true">P</span>
           <span>
             <span class="papp-portal-brand__name">PAPP</span>
             <span class="papp-portal-brand__sub">多人哨兵分析</span>
           </span>
         </a>
-        <a class="papp-portal-back" href="./">返回选手调查</a>
+        <a class="papp-portal-back" id="batch-header-back" href="./">返回选手调查</a>
       </header>
 
       <main class="papp-portal-main papp-investigation-main">
@@ -64,13 +64,14 @@
           </section>
 
           <div class="investigation-analysis__actions">
-            <a class="papp-portal-action investigation-analysis__back" href="./">返回调查入口</a>
+            <a class="papp-portal-action investigation-analysis__back" id="batch-footer-back" href="./">返回调查入口</a>
           </div>
           <p class="investigation-analysis__message" id="batch-error" role="alert"></p>
         </section>
       </main>
       <footer class="papp-portal-footer">PAPP · Player investigation workspace</footer>
     </div>
-    <script defer src="./batch-analysis.js?v=papp-portal.1"></script>
+    <script defer src="./rating-presentation.js?v=papp-portal.1"></script>
+    <script defer src="./batch-analysis.js?v=papp-portal.4"></script>
   </body>
 </html>

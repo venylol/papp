@@ -2,7 +2,12 @@
   "use strict";
 
   const $ = (selector) => document.querySelector(selector);
-  const batchId = new URLSearchParams(window.location.search).get("batchId") || "";
+  const params = new URLSearchParams(window.location.search);
+  const batchId = params.get("batchId") || "";
+  const fromHistory = params.get("from") === "history";
+  const brandLink = $("#batch-brand");
+  const headerBack = $("#batch-header-back");
+  const footerBack = $("#batch-footer-back");
   const statusBadge = $("#batch-status-badge");
   const tournament = $("#batch-tournament");
   const id = $("#batch-id");
@@ -17,6 +22,15 @@
   const resultList = $("#batch-result-list");
   const error = $("#batch-error");
   let polling = true;
+
+  if (fromHistory) {
+    brandLink.href = "./history.html";
+    brandLink.setAttribute("aria-label", "返回历史分析");
+    headerBack.href = "./history.html";
+    headerBack.textContent = "返回历史分析";
+    footerBack.href = "./history.html";
+    footerBack.textContent = "返回历史分析";
+  }
 
   function text(value) {
     return String(value ?? "").replace(/\s+/gu, " ").trim();
@@ -74,10 +88,11 @@
       } else {
         const summary = result.summary || {};
         const sentinel = summary.sentinel || {};
+        const ratingPresentation = window.PappRatingPresentation.presentRating(sentinel.rating || {});
         const grid = document.createElement("div");
         grid.className = "investigation-analysis__metric-grid";
         metric(grid, "哨兵分类", text(summary.classification) || "—");
-        metric(grid, "预估 Rating", format(summary.estimatedElo));
+        metric(grid, "预估 Rating", ratingPresentation.value, ratingPresentation.detail);
         metric(grid, "候选举报局", `${format(sentinel.candidateGameCount)} 局`, `最终举报组 ${format(summary.reportedGameCount)} 局`);
         metric(grid, "整体超越率", number(sentinel.overallExceedanceRate) === null ? "—" : `${format(number(sentinel.overallExceedanceRate) * 100, 2)}%`);
         metric(grid, "最强阶段", text(sentinel.strongestPhaseLabel) || "—", `最弱阶段：${text(sentinel.weakestPhaseLabel) || "—"}`);
@@ -85,7 +100,9 @@
         if (result.runId) {
           const link = document.createElement("a");
           link.className = "investigation-analysis__appendix-link";
-          link.href = `./analysis.html?runId=${encodeURIComponent(result.runId)}`;
+          const detailParams = new URLSearchParams({ runId: result.runId, batchId });
+          if (fromHistory) detailParams.set("from", "history");
+          link.href = `./analysis.html?${detailParams.toString()}`;
           link.textContent = "查看该选手完整分析详情";
           section.append(link);
         }

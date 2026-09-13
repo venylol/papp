@@ -1,0 +1,19 @@
+{
+  "schema": "othello-standard-opening-catalog-v1",
+  "openings": [
+    {
+      "id": "diagonal",
+      "name": "Diagonal Opening",
+      "sequence": "f5f6",
+      "aliases": [
+        "diagonal opening"
+      ]
+    },
+    {
+      "id": "tanida",
+      "name": "Tanida",
+      "sequence": "f5f6e6d6c5e3d3g5",
+      "aliases": []
+    }
+  ]
+}

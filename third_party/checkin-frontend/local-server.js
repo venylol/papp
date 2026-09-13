@@ -11,6 +11,7 @@ const os = require("os");
 const path = require("path");
 const { execFile, spawn } = require("child_process");
 const { URL } = require("url");
+const sea = require("node:sea");
 const EgAnalysis = require("./papp-eg-analysis.js");
 const { ApCoordinator, mergeChanges } = require("./papp-ap-coordinator.js");
 const ApCheckin = require("./papp-ap-checkin.js");
@@ -18,9 +19,11 @@ const ApTournament = require("./papp-ap-tournament.js");
 const ApExport = require("./papp-ap-export.js");
 const TournamentArchive = require("./papp-tournament-archive.js");
 const TournamentHistory = require("./papp-tournament-history.js");
-const { InvestigationBatchManager } = require("./papp-investigation-batch.js");
+const { InvestigationBatchManager, safeBatchId } = require("./papp-investigation-batch.js");
 
 const STATIC_ROOT = path.resolve(__dirname);
+const SEA_WEB_ASSET_PREFIX = "web/";
+const SEA_WEB_ASSET_KEYS = sea.isSea() ? new Set(sea.getAssetKeys()) : null;
 const PROJECT_ROOT = path.resolve(STATIC_ROOT, "..", "..");
 const PAPP_C_EXECUTABLE = path.resolve(
   process.env.PAPP_C_EXECUTABLE || path.join(PROJECT_ROOT, "bin", "Windows", "papp_GB.exe"),
@@ -73,7 +76,7 @@ const PAPP_TOURNAMENT_WORKFILES_ENV = "PAPP_TOURNAMENT_WORKFILES_DIR";
 const HOST = process.env.PAPP_HOST || "127.0.0.1";
 const PORT = Number(process.env.PAPP_PORT || 4175);
 const SERVICE = "papp-local-frontend";
-const SERVICE_VERSION = "papp-local-frontend.23";
+const SERVICE_VERSION = "papp-local-frontend.30";
 const MAX_BODY_BYTES = 8 * 1024 * 1024;
 const SCRIPT_WRITE_GUARD_MS = 3000;
 const SCRIPT_RETRY_ERROR_MS = 1000;
@@ -91,9 +94,9 @@ const EG_ENGINE_DIR = path.join(
   PROJECT_ROOT,
   "vendor",
   "engines",
-  "Egaroucid_for_Console_7_8_1_Windows_AVX512_AMD",
+  "Egaroucid_for_Console_7_8_1_Windows_SIMD",
 );
-const EG_ENGINE = path.join(EG_ENGINE_DIR, "Egaroucid_for_Console_7_8_1_AVX512_AMD.exe");
+const EG_ENGINE = path.join(EG_ENGINE_DIR, "Egaroucid_for_Console_7_8_1_SIMD.exe");
 
 let egAnalysisJob = null;
 const playerInvestigationJobs = new Map();
@@ -229,6 +232,8 @@ function schedulePendingScriptWrite() {
 function mappingPythonCommand() {
   const configured = String(process.env.PAPP_PYTHON || "").trim();
   if (configured) return configured;
+  const packagedPython = path.join(PROJECT_ROOT, "runtime", "python", "python.exe");
+  if (fs.existsSync(packagedPython)) return packagedPython;
   const venvPython = path.join(WECHAT_DIR, ".venv", "Scripts", "python.exe");
   return fs.existsSync(venvPython) ? venvPython : "python";
 }
@@ -792,6 +797,17 @@ function investigationReportSummary(runDir) {
       })
       .filter(Boolean)
     : [];
+  const ratingStatusReasons = Array.isArray(estimatedElo.statusReasons)
+    ? estimatedElo.statusReasons.map(normalizeWhitespace).filter(Boolean)
+    : [];
+  const excludedRatingReasonCounts = new Map();
+  if (Array.isArray(estimatedElo.excludedGamesWithReasons)) {
+    for (const excluded of estimatedElo.excludedGamesWithReasons) {
+      const reason = normalizeWhitespace(excluded && excluded.reason);
+      if (!reason) continue;
+      excludedRatingReasonCounts.set(reason, (excludedRatingReasonCounts.get(reason) || 0) + 1);
+    }
+  }
   const sentinelSummary = isSentinel
     ? {
         bestK: investigationSummaryNumber(scan.selectedK ?? selection.selectedK),
@@ -819,6 +835,17 @@ function investigationReportSummary(runDir) {
         rating: {
           estimate,
           status: normalizeWhitespace(estimatedElo.status),
+          statusReasons: ratingStatusReasons,
+          selectedGameCount: investigationSummaryNumber(estimatedElo.selectedGameCount),
+          minimumGameCount: investigationSummaryNumber(estimatedElo.formalMinimumGameCount),
+          maximumGameCount: investigationSummaryNumber(estimatedElo.formalMaximumGameCount),
+          formalMinimum: investigationSummaryNumber(estimatedElo.formalEloMinimum),
+          formalMaximum: investigationSummaryNumber(estimatedElo.formalEloMaximum),
+          excludedGameCount: Array.isArray(estimatedElo.excludedGamesWithReasons)
+            ? estimatedElo.excludedGamesWithReasons.length
+            : null,
+          excludedReasons: Array.from(excludedRatingReasonCounts, ([reason, count]) => ({ reason, count }))
+            .sort((left, right) => right.count - left.count || left.reason.localeCompare(right.reason)),
           intervals: ratingIntervals,
         },
         phaseStatus: normalizeWhitespace(phaseAnalysis.status),
@@ -847,6 +874,7 @@ function investigationReportSummary(runDir) {
   return {
     schema: normalizeWhitespace(report.schema),
     status: normalizeWhitespace(report.status),
+    generatedAtUtc: normalizeWhitespace(report.generatedAtUtc),
     account: normalizeWhitespace(report.account),
     mode: isSentinel ? "sentinel" : "manual",
     classification: normalizeWhitespace(report.classification || selection.classification),
@@ -866,6 +894,85 @@ function investigationReportSummary(runDir) {
     ...(reportedAnalysis ? { reportedAnalysis } : {}),
     reportPath: path.join(runDir, "report.json"),
   };
+}
+
+function listPlayerInvestigationHistory() {
+  const reports = [];
+
+  if (fs.existsSync(PLAYER_INVESTIGATION_ROOT)) {
+    for (const entry of fs.readdirSync(PLAYER_INVESTIGATION_ROOT, { withFileTypes: true })) {
+      if (!entry.isDirectory() || !/^[0-9A-Za-z][0-9A-Za-z._-]{0,127}$/.test(entry.name)) continue;
+      const runDir = resolvePlayerInvestigationRun(entry.name);
+      const reportPath = path.join(runDir, "report.json");
+      if (!fs.existsSync(reportPath)) continue;
+      const reportStat = fs.lstatSync(reportPath);
+      if (!reportStat.isFile()) continue;
+
+      const report = investigationReportSummary(runDir);
+      if (!report || report.status !== "completed" || !report.account) continue;
+      const progress = readPlayerInvestigationProgress(runDir);
+      reports.push({
+        type: "single",
+        runId: entry.name,
+        schema: report.schema,
+        status: report.status,
+        account: report.account,
+        mode: report.mode,
+        classification: report.classification,
+        reportedGameCount: report.reportedGameCount,
+        controlGameCount: report.controlGameCount,
+        generatedAt: report.generatedAtUtc
+          || normalizeWhitespace(progress && progress.createdAtUtc)
+          || reportStat.mtime.toISOString(),
+      });
+    }
+  }
+
+  if (fs.existsSync(PLAYER_INVESTIGATION_BATCH_ROOT)) {
+    for (const entry of fs.readdirSync(PLAYER_INVESTIGATION_BATCH_ROOT, { withFileTypes: true })) {
+      if (!entry.isDirectory()) continue;
+      let batchId;
+      try {
+        batchId = safeBatchId(entry.name);
+      } catch (_) {
+        continue;
+      }
+      const reportPath = path.join(PLAYER_INVESTIGATION_BATCH_ROOT, batchId, "report.json");
+      if (!fs.existsSync(reportPath)) continue;
+      const reportStat = fs.lstatSync(reportPath);
+      if (!reportStat.isFile()) continue;
+      const report = readInvestigationJson(reportPath, "多人哨兵分析报告");
+      if (
+        !report
+        || report.schema !== "papp-batch-sentinel-report-v1"
+        || report.status !== "completed"
+        || report.batchId !== batchId
+      ) continue;
+
+      reports.push({
+        type: "batch",
+        batchId,
+        schema: report.schema,
+        status: report.status,
+        competitionName: normalizeWhitespace(report.competitionName),
+        tournamentFile: normalizeWhitespace(report.tournamentFile),
+        totalCount: investigationSummaryNumber(report.totalCount),
+        completedCount: investigationSummaryNumber(report.completedCount),
+        failedCount: investigationSummaryNumber(report.failedCount),
+        createdAt: normalizeWhitespace(report.createdAt),
+        completedAt: normalizeWhitespace(report.completedAt),
+        generatedAt: normalizeWhitespace(report.completedAt)
+          || normalizeWhitespace(report.createdAt)
+          || reportStat.mtime.toISOString(),
+      });
+    }
+  }
+
+  const timestamp = (report) => {
+    const value = Date.parse(report.generatedAt);
+    return Number.isFinite(value) ? value : 0;
+  };
+  return reports.sort((left, right) => timestamp(right) - timestamp(left));
 }
 
 function appendInvestigationOutput(current, chunk) {
@@ -987,6 +1094,10 @@ function startPlayerInvestigationProcess(runId, runDir, phase, args) {
         ...process.env,
         PYTHONUTF8: "1",
         PYTHONIOENCODING: "utf-8",
+        PYTHONPATH: [
+          path.join(PLAYER_TOOLKIT_DIR, "src"),
+          process.env.PYTHONPATH || "",
+        ].filter(Boolean).join(path.delimiter),
       },
       stdio: ["ignore", "pipe", "pipe"],
     },
@@ -1037,12 +1148,28 @@ function playerInvestigationStatus(runId, includeCatalog = false) {
   const progress = readPlayerInvestigationProgress(runDir);
   const config = readInvestigationJson(path.join(runDir, "run_config.json"), "选手调查配置");
   const job = playerInvestigationJobs.get(String(runId).trim());
+  const progressRunning = normalizeWhitespace(progress && progress.status).toLowerCase() === "running";
+  let persistedProcessRunning = false;
+  const persistedPid = Number(progress && progress.processId);
+  if (progressRunning && Number.isInteger(persistedPid) && persistedPid > 0) {
+    try {
+      process.kill(persistedPid, 0);
+      persistedProcessRunning = true;
+    } catch (_) {
+      persistedProcessRunning = false;
+    }
+  }
+  const progressFailed = normalizeWhitespace(progress && progress.status).toLowerCase() === "failed";
   const status = {
     ok: true,
     runId: String(runId).trim(),
     account: normalizeWhitespace((config && config.account) || (progress && progress.account)),
     mode: normalizeWhitespace(config && config.mode),
-    running: Boolean(job && job.running),
+    // Keep a run marked as active when the service was restarted and the
+    // child process registry is empty; the progress file is the durable
+    // source of truth for that in-flight stage.
+    running: (Boolean(job && job.running) || (!job && persistedProcessRunning))
+      && !["completed", "failed", "cancelled"].includes(normalizeWhitespace(progress && progress.status).toLowerCase()),
     phase: job ? job.phase : "",
     startedAt: job ? job.startedAt : "",
     finishedAt: job ? job.finishedAt : "",
@@ -1050,7 +1177,7 @@ function playerInvestigationStatus(runId, includeCatalog = false) {
     terminationRequested: Boolean(job && job.terminationRequested),
     terminated: Boolean(job && job.terminated),
     error: normalizeWhitespace(
-      (job && job.error) || (progress && progress.lastError && progress.lastError.message) || "",
+      (job && job.error) || (progressFailed && progress.lastError && progress.lastError.message) || "",
     ),
     progress,
     report: investigationReportSummary(runDir),
@@ -1092,6 +1219,30 @@ function terminatePlayerInvestigation(payload) {
 function startPlayerInvestigation(payload) {
   const input = payload && typeof payload === "object" ? payload : {};
   const account = investigationAccount(input.account || input.id);
+  // Reuse the newest completed acquisition so reopening the flow does not
+  // discard the already downloaded game catalog and start a second fetch.
+  if (fs.existsSync(PLAYER_INVESTIGATION_ROOT)) {
+    const prior = fs.readdirSync(PLAYER_INVESTIGATION_ROOT, { withFileTypes: true })
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => path.join(PLAYER_INVESTIGATION_ROOT, entry.name))
+      .sort((a, b) => fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs);
+    for (const candidate of prior) {
+      const progress = readPlayerInvestigationProgress(candidate);
+      const config = readInvestigationJson(path.join(candidate, "run_config.json"), "选手调查配置");
+      if (normalizeWhitespace((config && config.account) || (progress && progress.account)).toLowerCase() !== account.toLowerCase()) continue;
+      // Only reuse an acquisition that is still waiting for group selection.
+      // Once groups are frozen, reusing this directory after a service restart
+      // sends the user back to a run that may still be analysing (or has
+      // already failed), so the next selection is rejected as frozen.
+      const groupsPending = progress
+        && progress.stages?.fetch_games?.status === "completed"
+        && progress.stages?.select_groups?.status !== "completed"
+        && progress.status !== "completed";
+      if (groupsPending && fs.existsSync(path.join(candidate, "game_catalog.json"))) {
+        return playerInvestigationStatus(path.basename(candidate), false);
+      }
+    }
+  }
   for (const job of playerInvestigationJobs.values()) {
     if (job.running && normalizeWhitespace(job.account).toLowerCase() === account.toLowerCase()) {
       return playerInvestigationStatus(job.runId, false);
@@ -1148,6 +1299,9 @@ function startPlayerSentinelInvestigation(payload) {
     "--reference-config", PLAYER_SENTINEL_REFERENCE_CONFIG,
     "--elo-reference-config", PLAYER_SENTINEL_ELO_REFERENCE_CONFIG,
     "--bundle", sourceBundle,
+    // Keep the expensive pseudo scan parallel by default. Four workers cap
+    // memory use while still using multiple cores on the bundled runtime.
+    "--pseudo-workers", String(Math.max(1, Math.min(4, Math.floor((os.cpus()?.length || 2) / 2)))),
   ];
   const job = startPlayerInvestigationProcess(runId, runDir, "sentinel", args);
   job.account = account;
@@ -1165,6 +1319,20 @@ function selectPlayerInvestigationGroups(payload) {
   const progress = readPlayerInvestigationProgress(runDir);
   if (!progress || progress.stages?.fetch_games?.status !== "completed") {
     throw new Error("对局列表尚未拉取完成");
+  }
+  // A service restart loses the in-memory child-process registry, but the
+  // progress file still records an active analysis. Reusing that run for a
+  // second selection would only produce the misleading frozen-groups error.
+  if (progress.status === "running" && progress.stages?.select_groups?.status === "completed") {
+    const durableStatus = playerInvestigationStatus(runId, false);
+    if (!durableStatus.running) {
+      throw new Error("该调查进程已退出，请返回调查入口重新开始");
+    }
+    return {
+      ...durableStatus,
+      reportedGameCount: progress.stages.select_groups.reportedGameIds?.length || 0,
+      controlGameCount: progress.stages.select_groups.controlGameIds?.length || 0,
+    };
   }
   const catalog = readPlayerInvestigationCatalog(runDir);
   if (!catalog || !catalog.games.length) throw new Error("没有可供选择的对局");
@@ -1267,6 +1435,54 @@ function startBatchSentinelInvestigation(payload) {
 
 function batchSentinelStatus(batchId) {
   return investigationBatchManager.status(batchId);
+}
+
+function repairBatchSentinelResult(batchId, runId) {
+  const id = safeBatchId(batchId);
+  const runDir = resolvePlayerInvestigationRun(runId);
+  const summary = investigationReportSummary(runDir);
+  if (!summary || summary.status !== "completed") {
+    throw new Error("单人调查尚未生成完整报告，不能修复批量历史记录");
+  }
+  const repairedAt = new Date().toISOString();
+  let repaired = false;
+  for (const filename of ["progress.json", "report.json"]) {
+    const file = path.join(PLAYER_INVESTIGATION_BATCH_ROOT, id, filename);
+    if (!fs.existsSync(file)) continue;
+    const batch = readInvestigationJson(file, "多人哨兵分析历史记录");
+    const expectedSchema = filename === "report.json"
+      ? "papp-batch-sentinel-report-v1"
+      : "papp-batch-sentinel-progress-v1";
+    if (batch.schema !== expectedSchema || batch.batchId !== id) {
+      throw new Error(`多人哨兵分析历史记录契约不匹配：${file}`);
+    }
+    const results = Array.isArray(batch.results) ? batch.results : [];
+    const index = results.findIndex((result) => normalizeWhitespace(result && result.runId) === runId);
+    if (index < 0) throw new Error(`批量历史记录中找不到单人运行：${runId}`);
+    const previous = results[index];
+    results[index] = {
+      rank: previous.rank,
+      name: previous.name,
+      account: previous.account,
+      status: "completed",
+      runId,
+      summary,
+      repair: {
+        repairedAt,
+        previousStatus: normalizeWhitespace(previous.status),
+        previousError: normalizeWhitespace(previous.error),
+      },
+    };
+    batch.completedCount = results.filter((result) => result.status === "completed").length;
+    batch.failedCount = results.filter((result) => result.status === "failed").length;
+    batch.repairedAt = repairedAt;
+    const temporary = `${file}.${process.pid}.repair.tmp`;
+    fs.writeFileSync(temporary, `${JSON.stringify(batch, null, 2)}\n`, "utf8");
+    fs.renameSync(temporary, file);
+    repaired = true;
+  }
+  if (!repaired) throw new Error(`找不到批量哨兵历史记录：${id}`);
+  return batchSentinelStatus(id);
 }
 
 function profileNumber(value, field, integer = false) {
@@ -3101,6 +3317,34 @@ function serveStatic(req, res, pathname) {
     return;
   }
 
+  if (sea.isSea()) {
+    let assetRelative = path.relative(STATIC_ROOT, target).split(path.sep).join("/");
+    let assetKey = `${SEA_WEB_ASSET_PREFIX}${assetRelative}`;
+    if (!SEA_WEB_ASSET_KEYS.has(assetKey)) {
+      const indexKey = `${assetKey.replace(/\/+$/, "")}/index.html`;
+      if (!SEA_WEB_ASSET_KEYS.has(indexKey)) {
+        sendError(res, 404, "Not found");
+        return;
+      }
+      assetKey = indexKey;
+    }
+
+    const ext = path.extname(assetKey).toLowerCase();
+    res.writeHead(200, {
+      "Content-Type": MIME_TYPES[ext] || "application/octet-stream",
+      "Cache-Control":
+        ext === ".html" || ext === ".js" || ext === ".css"
+          ? "no-cache"
+          : "public, max-age=3600",
+    });
+    if (req.method === "HEAD") {
+      res.end();
+      return;
+    }
+    res.end(Buffer.from(sea.getAsset(assetKey)));
+    return;
+  }
+
   let file = target;
   try {
     if (fs.existsSync(file) && fs.statSync(file).isDirectory()) {
@@ -3197,6 +3441,15 @@ async function handleApi(req, res, pathname) {
       sendJson(res, 200, { ok: true, tournament: readArchivedTournament(file) });
     } catch (error) {
       sendError(res, Number(error && error.statusCode) || 400, "读取往期比赛失败", error.message);
+    }
+    return true;
+  }
+
+  if (pathname === "/api/player-investigation/history" && req.method === "GET") {
+    try {
+      sendJson(res, 200, { ok: true, reports: listPlayerInvestigationHistory() });
+    } catch (error) {
+      sendError(res, 500, "读取历史分析报告失败", error.message);
     }
     return true;
   }
@@ -3604,4 +3857,6 @@ module.exports = {
   readArchivedTournament,
   startBatchSentinelInvestigation,
   batchSentinelStatus,
+  repairBatchSentinelResult,
+  listPlayerInvestigationHistory,
 };

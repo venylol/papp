@@ -67,3 +67,23 @@ test("batch status reads do not rewrite the progress snapshot", async () => {
   assert.equal(fs.readFileSync(progress, "utf8"), contents);
   finishPlayer({ runId: "run-alpha", summary: { status: "completed" } });
 });
+
+test("completed batch status reads the final report from disk", async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "papp-batch-final-report-"));
+  const manager = new InvestigationBatchManager({
+    root,
+    runPlayer: async () => ({ runId: "run-alpha", summary: { status: "completed" } }),
+  });
+  const started = manager.start({ tournamentFile: "赛.csv", players: [{ rank: 1, account: "alpha" }] });
+  let status;
+  for (let attempt = 0; attempt < 50; attempt += 1) {
+    status = manager.status(started.batchId);
+    if (status.status === "completed") break;
+    await new Promise((resolve) => setTimeout(resolve, 5));
+  }
+  const reportPath = path.join(root, started.batchId, "report.json");
+  const report = JSON.parse(fs.readFileSync(reportPath, "utf8"));
+  report.repairedAt = "2026-09-13T00:00:00.000Z";
+  fs.writeFileSync(reportPath, JSON.stringify(report), "utf8");
+  assert.equal(manager.status(started.batchId).repairedAt, "2026-09-13T00:00:00.000Z");
+});

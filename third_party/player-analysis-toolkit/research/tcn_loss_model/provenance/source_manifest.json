@@ -1,0 +1,29 @@
+{
+  "schema": "tcn-loss-source-provenance-v1",
+  "migrationDate": "2026-08-03",
+  "sourceRepository": "C:\\Users\\MeroAF\\Desktop\\repo_practiceAI\\Egaroucid",
+  "sourceCommit": "4b2c580349a8226f50932e670ee65b1de7571fdb",
+  "readOnlySource": true,
+  "sourceTrainingScript": "C:\\Users\\MeroAF\\Desktop\\repo_practiceAI\\Egaroucid\\research\\train_tcn_board_cnn_model.py",
+  "sourceOutputDirectory": "C:\\Users\\MeroAF\\Desktop\\repo_practiceAI\\Egaroucid\\research\\main_tcn_time_model_outputs",
+  "files": [
+    {"name": "train_tcn_board_cnn_model.py", "sha256": "9fa11b22f7400c5a7904499a4fab956f687a1f9fb2a88c2d47b4b9635ed5e0f4"},
+    {"name": "tcn_board_cnn_time_model_best.pt", "sha256": "0d674783620eafdff425bf6aa7fa991a87f98f3aaf8ea669eb4612f96c5eeca0"},
+    {"name": "config.json", "sha256": "cfd7aaae3606309dff755033e12752bc34a7b052efb1728cad956be3684e98d7"},
+    {"name": "preprocessing.json", "sha256": "7657b704778ff2dc95b13eebb60ff8bd01c89968082c6461fdaef1e7c3bd9d73"},
+    {"name": "summary.md", "sha256": "db54a456ef4e949fd49b8d4726a902b21bc64d9eddf6f8f526e4c1c508906476"},
+    {"name": "metrics.csv", "sha256": "75162977198361ea71a84073d22eeb193d15c791e66c95d0759226fae5730be5"}
+  ],
+  "checkpointConfiguration": {
+    "inputFeatures": 362,
+    "numericFeatures": 256,
+    "missingIndicators": 106,
+    "boardCnnChannels": 23,
+    "channels": 128,
+    "levels": 6,
+    "kernelSize": 3,
+    "boardEmbeddingDim": 96,
+    "sourceMaxSequenceLength": 66
+  },
+  "migrationNote": "Original files were copied without modification. Adapted implementation lives under src/."
+}

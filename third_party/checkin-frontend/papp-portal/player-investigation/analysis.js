@@ -4,6 +4,11 @@
   const $ = (selector) => document.querySelector(selector);
   const params = new URLSearchParams(window.location.search);
   const runId = String(params.get("runId") || "").trim();
+  const batchId = String(params.get("batchId") || "").trim();
+  const fromHistory = params.get("from") === "history";
+  const brandLink = $("#analysis-brand");
+  const headerBack = $("#analysis-header-back");
+  const footerBack = $("#analysis-footer-back");
   const statusBadge = $("#analysis-status-badge");
   const workflowName = $("#analysis-workflow-name");
   const pageTitle = $("#analysis-title");
@@ -88,6 +93,24 @@
 
   let stopping = false;
   let polling = true;
+
+  if (fromHistory) {
+    brandLink.href = "./history.html";
+    brandLink.setAttribute("aria-label", "返回历史分析");
+    headerBack.hidden = false;
+    headerBack.href = "./history.html";
+    headerBack.textContent = "返回历史分析";
+    footerBack.href = "./history.html";
+    footerBack.textContent = "返回历史分析";
+  } else if (batchId && runId) {
+    const batchParams = new URLSearchParams({ batchId });
+    const batchOverviewHref = `./batch-analysis.html?${batchParams.toString()}`;
+    brandLink.href = batchOverviewHref;
+    brandLink.setAttribute("aria-label", "返回批量分析概览");
+    headerBack.hidden = true;
+    footerBack.href = batchOverviewHref;
+    footerBack.textContent = "返回批量分析概览";
+  }
 
   function normalize(value) {
     return String(value ?? "").replace(/\s+/g, " ").trim();
@@ -385,15 +408,6 @@
     ]);
   }
 
-  function ratingIntervalText(interval) {
-    const range = `[${formatMetricNumber(interval.lower, 0)}, ${formatMetricNumber(interval.upper, 0)}]`;
-    const boundaries = [
-      interval.truncatedLower ? "下限触及搜索边界" : "",
-      interval.truncatedUpper ? "上限触及搜索边界" : "",
-    ].filter(Boolean);
-    return boundaries.length ? `${range}（${boundaries.join("，")}）` : range;
-  }
-
   function renderSentinelReport(report) {
     const data = report.sentinel;
     if (!data) return;
@@ -403,15 +417,7 @@
     const note = `哨兵分类：${classification}。超越率是扫描统计指标，不等同于作弊概率。`;
     const section = appendReportSection("完整哨兵流程", note);
     const rating = data.rating || {};
-    const ratingIntervals = Array.isArray(rating.intervals) ? rating.intervals : [];
-    const ratingDetails = [];
-    if (ratingIntervals.length) {
-      ratingDetails.push(`95% 校准区间：${ratingIntervals.map(ratingIntervalText).join("；")}`);
-    }
-    if (rating.status === "multiple_minima") ratingDetails.push("估值曲线存在多个极小值");
-    const ratingValue = rating.estimate === null || rating.estimate === undefined
-      ? "未提供"
-      : formatMetricNumber(rating.estimate, 0);
+    const ratingPresentation = window.PappRatingPresentation.presentRating(rating);
     const rateMetric = (label, value, interval) => ({
       label,
       value: formatRate(value),
@@ -422,7 +428,7 @@
       : `候选局 ${formatMetricNumber(data.candidateGameCount, 0)} 局`;
 
     appendReportMetrics(section, [
-      { label: "预估 Rating", value: ratingValue, detail: ratingDetails.join("；") || "" },
+      { label: "预估 Rating", value: ratingPresentation.value, detail: ratingPresentation.detail },
       {
         label: "最佳 K",
         value: data.bestK === null || data.bestK === undefined ? "—" : `K = ${formatMetricNumber(data.bestK, 0)}`,

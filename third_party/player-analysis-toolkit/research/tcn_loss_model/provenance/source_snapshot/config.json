@@ -1,0 +1,103 @@
+{
+  "training_config": {
+    "epochs": 600,
+    "batch_size": 128,
+    "channels": 128,
+    "levels": 6,
+    "kernel_size": 3,
+    "dropout": 0.15,
+    "lr": 0.001,
+    "weight_decay": 0.0001,
+    "patience": 105,
+    "min_delta": 0.0001,
+    "num_workers": 0,
+    "test_size": 0.1,
+    "seed": 42,
+    "warmup_epochs": 12,
+    "min_lr_ratio": 0.08,
+    "board_embedding_dim": 96,
+    "board_channels": 64,
+    "board_dropout": 0.1,
+    "prep_workers": 16,
+    "save_latest_every": 1,
+    "current_hint_planes": 6
+  },
+  "model_name": "tcn_board_cnn_time_model",
+  "feature_revision": "side_history_phase_board_hint6_close_best_pattern_hint6_dispersion_compact_dispersion_human_opening_frequency_context_metadata_direct_seconds_board_cnn_conditioned_tcn_current_hint6_rank_planes_rank1_score_rank2_4_gap_planes_prev_own_hint1_value",
+  "target_info": {
+    "target_log": "log1p(actual_thinking_time_ms / 1000.0)",
+    "pred_seconds_transform": "expm1(pred_log), then clamp to [0.05, remaining_before_s * 0.95]",
+    "minimum_pred_seconds": 0.05,
+    "training_time_limit_ms": 300000
+  },
+  "target_metadata_columns": [],
+  "board_encoding": {
+    "shape": "batch x time x 3 x 64 flattened 8x8 board tokens",
+    "contexts": [
+      "current",
+      "prev_opponent",
+      "prev_own"
+    ],
+    "tokens_per_position": 192,
+    "token_ids": {
+      "padding": 0,
+      "empty": 1,
+      "X": 2,
+      "O": 3
+    },
+    "move_shape": "batch x time x 3; current move is always hidden as 0",
+    "move_token_ids": {
+      "no_move_or_hidden_current": 0,
+      "a1": 1,
+      "h8": 64
+    },
+    "source": "board column after context metadata validation",
+    "hint_move_shape": "batch x time x 6; current hint6 move ranks only, actual current move hidden",
+    "hint_move_token_ids": {
+      "no_hint": 0,
+      "a1": 1,
+      "h8": 64
+    },
+    "hint_value_shape": "batch x time x 4; rank1 score plus rank2-rank4 score gaps",
+    "hint_value_scale": 32.0,
+    "hint_value_transform": "tanh(value / scale); rank1 uses raw score, ranks 2-4 use hint6_1_score - hint6_rank_score",
+    "prev_own_hint_value_shape": "batch x time x 2; previous same-side hint6_1 score value plus availability",
+    "prev_own_hint_value_transform": "value=tanh(prev_own_hint6_1_score / scale), availability=1 when previous same-side row and finite score exist; both channels broadcast over the 8x8 board",
+    "cnn_channels": [
+      "current_empty",
+      "current_X",
+      "current_O",
+      "prev_opponent_empty",
+      "prev_opponent_X",
+      "prev_opponent_O",
+      "prev_own_empty",
+      "prev_own_X",
+      "prev_own_O",
+      "prev_opponent_actual_move",
+      "prev_own_actual_move",
+      "current_hint6_1_move",
+      "current_hint6_2_move",
+      "current_hint6_3_move",
+      "current_hint6_4_move",
+      "current_hint6_5_move",
+      "current_hint6_6_move",
+      "current_hint6_1_score_value",
+      "current_hint6_2_gap_from_rank1",
+      "current_hint6_3_gap_from_rank1",
+      "current_hint6_4_gap_from_rank1",
+      "prev_own_hint6_1_score_value",
+      "prev_own_hint6_1_score_available"
+    ],
+    "board_cnn_input_channels": 23,
+    "current_hint_planes": 6,
+    "current_hint_value_planes": 4,
+    "current_hint_value_gap_max_rank": 4,
+    "prev_own_hint_value_planes": 2,
+    "fusion": "board CNN embedding FiLM-conditions numeric step embedding before causal TCN"
+  },
+  "checkpoint_paths": {
+    "best": "tcn_board_cnn_time_model_outputs\\tcn_board_cnn_time_model_best.pt",
+    "latest": "tcn_board_cnn_time_model_outputs\\tcn_board_cnn_time_model_latest.pt",
+    "legacy_best": "tcn_board_cnn_time_model_outputs\\tcn_board_cnn_time_model.pt"
+  }
+}

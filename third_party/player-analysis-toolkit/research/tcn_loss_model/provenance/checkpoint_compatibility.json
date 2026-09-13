@@ -1,0 +1,18 @@
+{
+  "compatible": true,
+  "checkpoint": "C:\\Users\\MeroAF\\Desktop\\比赛编排\\player_analysis_toolkit\\research\\tcn_loss_model\\checkpoints\\base\\tcn_board_cnn_time_model_best.pt",
+  "checkpointSha256": "0d674783620eafdff425bf6aa7fa991a87f98f3aaf8ea669eb4612f96c5eeca0",
+  "checkpointVersion": 2,
+  "sourceEpoch": 596,
+  "sourceBestEpoch": 596,
+  "inputFeatures": 362,
+  "numericFeatures": 256,
+  "missingIndicators": 106,
+  "boardCnnChannels": 23,
+  "stateTensorCount": 60,
+  "strictBackboneLoad": true,
+  "inputPolicy": "uniform-no-current-player-loss-history-v1",
+  "lossHistoryInputFeatures": 0,
+  "sourceMaxSequenceLength": 66,
+  "passSemanticWarning": "source checkpoint reports max_seq_len above 60; original trainer did not filter actual_move='-'. New loss-model sequences must exclude pass decision rows and remap ply to global_placement_ply."
+}

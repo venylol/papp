@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="zh-Hans">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#F3F9F1" />
+    <meta name="application-name" content="PAPP · 历史分析" />
+    <title>PAPP · 历史分析</title>
+    <link rel="icon" href="../../icons/favicon-32.png" sizes="32x32" />
+    <link rel="stylesheet" href="../../styles.css?v=papp-portal.2" />
+    <link rel="stylesheet" href="../styles.css?v=papp-portal.2" />
+    <link rel="stylesheet" href="./player-investigation.css?v=papp-portal.15" />
+  </head>
+  <body class="papp-portal-body">
+    <div class="papp-portal-shell">
+      <header class="papp-portal-header" role="banner">
+        <a class="papp-portal-brand" href="./" aria-label="返回选手调查">
+          <span class="papp-portal-mark" aria-hidden="true">P</span>
+          <span>
+            <span class="papp-portal-brand__name">PAPP</span>
+            <span class="papp-portal-brand__sub">历史分析</span>
+          </span>
+        </a>
+        <a class="papp-portal-back" href="./">返回选手调查</a>
+      </header>
+
+      <main class="papp-portal-main papp-investigation-main">
+        <div class="papp-portal-kicker">PLAYER INVESTIGATION · HISTORY</div>
+        <h1 class="papp-portal-title">历史分析</h1>
+        <p class="papp-portal-lead">
+          选择已完成的单人或批量报告，使用当前分析页面查看结果；打开历史报告不会重新运行分析。
+        </p>
+
+        <section class="papp-investigation-card investigation-history-card" aria-labelledby="investigation-history-title">
+          <div class="papp-portal-panel__topline">
+            <span class="papp-portal-status">本机报告</span>
+            <button class="investigation-link-button" id="btn-history-refresh" type="button">刷新列表</button>
+          </div>
+          <h2 id="investigation-history-title">已完成的调查报告</h2>
+          <p class="investigation-history-status" id="investigation-history-status" role="status" aria-live="polite">正在读取本机报告…</p>
+          <div class="investigation-history-list" id="investigation-history-list" role="list" aria-live="polite"></div>
+          <p class="investigation-query-status investigation-query-status--error" id="investigation-history-error" role="alert"></p>
+          <div class="investigation-analysis__actions">
+            <a class="papp-portal-action investigation-analysis__back" href="./">返回选手调查</a>
+          </div>
+        </section>
+      </main>
+      <footer class="papp-portal-footer">PAPP · Player investigation workspace</footer>
+    </div>
+    <script defer src="./history.js?v=papp-portal.2"></script>
+  </body>
+</html>

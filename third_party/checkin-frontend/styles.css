@@ -1,4 +1,4 @@
-/* ===========================
+﻿/* ===========================
    Material You-ish (M3) theme
    - Bright green + white (light mode)
    - Soft, rounded, tonal surfaces
@@ -3583,11 +3583,7 @@ html.no-color-mix .score-registration-actions {
 }
 
 .player-item--new {
-  background: color-mix(
-    in srgb,
-    var(--md-sys-color-secondary-container) 25%,
-    transparent
-  );
+  /* 新人标记仅通过标签显示，不覆盖签到状态底色 */
 }
 
 .player-left {
@@ -3653,7 +3649,8 @@ html.no-color-mix .score-registration-actions {
   );
 }
 
-.chip-good {
+.chip-good,
+.chip-new {
   background: color-mix(
     in srgb,
     var(--md-sys-color-primary) 18%,
@@ -3706,15 +3703,6 @@ html.no-color-mix .score-registration-actions {
     border-color: color-mix(in srgb, #d7a323 32%, transparent);
     color: var(--md-sys-color-on-surface);
   }
-}
-
-.chip-new {
-  background: color-mix(
-    in srgb,
-    var(--md-sys-color-secondary) 18%,
-    var(--md-sys-color-surface-container-high)
-  );
-  color: color-mix(in srgb, var(--md-sys-color-on-surface) 94%, transparent);
 }
 
 .player-actions {
@@ -4994,3 +4982,7 @@ html.screen-keyboard-checkin body.ios-checkin-editing .snackbar {
     );
   }
 }
+
+
+
+

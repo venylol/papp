@@ -144,6 +144,21 @@ for (const action of ["enable", "resume"]) {
   });
 }
 
+test("successful stop closes the AP settings modal instead of showing enable AP", async () => {
+  const h = harness();
+  await settle();
+  h.setResponse({ ok: true, ap: { enabled: true, status: "running" }, validation: [] });
+  await h.ui.refresh();
+  h.element("btn-ap-mode").events.click();
+  await settle();
+  assert.equal(h.element("ap-dialog").open, true);
+  h.setPostResponse({ ok: true, ap: { enabled: false, status: "off", message: "AP 已关闭" }, validation: [] });
+  h.element("stop").events.click();
+  await settle();
+  assert.equal(h.element("ap-dialog").open, false);
+  assert.equal(h.element("enable").hidden, false);
+});
+
 test("missing parameters block enable and show all missing fields", async () => {
   const h = harness();
   await settle();

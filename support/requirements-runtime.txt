@@ -1,0 +1,12 @@
+# PAPP runtime only: database decryption, investigation, models and plots.
+# Bundled compatible packages are retained; no upgrade or force-reinstall.
+pycryptodome>=3.19,<4
+zstandard>=0.22,<1
+mcp>=1,<2
+numpy>=2,<3
+pandas>=2.2,<3
+scipy>=1.13,<2
+scikit-learn>=1.5,<2
+joblib>=1.4,<2
+torch>=2.6,<3
+matplotlib>=3.9,<4

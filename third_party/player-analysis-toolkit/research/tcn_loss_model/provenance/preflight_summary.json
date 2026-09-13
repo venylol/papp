@@ -1,0 +1,45 @@
+{
+  "schema": "tcn-loss-preflight-summary-v1",
+  "checkedAt": "2026-08-03",
+  "model": "board-cnn-causal-tcn-time-conditioned-severe-loss",
+  "formalTrainingStarted": false,
+  "checkpointCompatibility": {
+    "strictBackboneLoad": true,
+    "stateTensorCount": 60,
+    "inputFeatures": 362,
+    "boardCnnChannels": 23,
+    "inputPolicy": "uniform-no-current-player-loss-history-v1",
+    "lossHistoryInputFeatures": 0,
+    "checkpointSha256": "0d674783620eafdff425bf6aa7fa991a87f98f3aaf8ea669eb4612f96c5eeca0"
+  },
+  "cpuSyntheticSmokeTest": {
+    "ok": true,
+    "optimizationSteps": 0,
+    "severityClassHeadShape": [2, 4, 4],
+    "actualTimeDoesNotAffectTimeHead": true,
+    "actualTimeAffectsOnlySeverityHead": true,
+    "softmaxClassProbabilitySumIsOne": true,
+    "probabilityGe10LeGe4": true,
+    "probabilityGe4LePositive": true
+  },
+  "unitTests": {
+    "framework": "unittest",
+    "tests": 13,
+    "passed": 13,
+    "failed": 0
+  },
+  "passHandling": {
+    "sourceTrainerFilteredExplicitPass": false,
+    "sourceCheckpointMaxSequenceLength": 66,
+    "newDecisionSequenceExcludesExplicitPass": true,
+    "syntheticSourcePly72With12PassesProduces60Placements": true
+  },
+  "lossHistoryPolicy": {
+    "name": "uniform-no-current-player-loss-history-v1",
+    "sameForAllSplitsAndCohorts": true,
+    "forbiddenFieldsOmittedRatherThanMasked": true,
+    "dualInputModes": false,
+    "randomContextMasking": false
+  },
+  "status": "waiting-for-data"
+}

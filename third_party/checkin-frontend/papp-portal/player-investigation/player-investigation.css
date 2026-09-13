@@ -14,6 +14,118 @@
   letter-spacing: -0.03em;
 }
 
+.investigation-page-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.investigation-page-title-row .papp-portal-title {
+  margin: 12px 0 10px;
+}
+
+.investigation-history-entry {
+  flex: 0 0 auto;
+  margin: 12px 0 10px;
+}
+
+.investigation-history-card {
+  display: grid;
+  max-width: none;
+  gap: 16px;
+}
+
+.investigation-history-card h2 {
+  margin: 0;
+}
+
+.investigation-history-status {
+  margin: 0;
+  color: var(--md-sys-color-on-surface-variant);
+  line-height: 1.55;
+}
+
+.investigation-history-list {
+  display: grid;
+  gap: 12px;
+}
+
+.investigation-history-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 18px;
+  padding: 18px 20px;
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: 20px;
+  background: var(--md-sys-color-surface-container-high);
+  color: var(--md-sys-color-on-surface);
+  text-decoration: none;
+  transition: transform var(--transition), border-color var(--transition), background var(--transition);
+}
+
+.investigation-history-item:hover {
+  transform: translateY(-1px);
+  border-color: var(--md-sys-color-primary);
+  background: var(--md-sys-color-primary-container);
+}
+
+.investigation-history-item:focus-visible {
+  outline: 2px solid var(--md-sys-color-primary);
+  outline-offset: 3px;
+}
+
+.investigation-history-item__main {
+  display: grid;
+  min-width: 0;
+  gap: 8px;
+}
+
+.investigation-history-item__topline {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
+
+.investigation-history-item__type {
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: var(--md-sys-color-primary-container);
+  color: var(--md-sys-color-on-primary-container);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.investigation-history-item__date,
+.investigation-history-item__detail {
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: 13px;
+}
+
+.investigation-history-item__title,
+.investigation-history-item__detail {
+  margin: 0;
+}
+
+.investigation-history-item__title {
+  overflow-wrap: anywhere;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.investigation-history-item__detail {
+  line-height: 1.5;
+}
+
+.investigation-history-item__action {
+  color: var(--md-sys-color-primary);
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
 .investigation-mode-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1072,6 +1184,30 @@
 }
 
 @media (max-width: 480px) {
+  .investigation-page-title-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .investigation-page-title-row .papp-portal-title {
+    margin-bottom: 2px;
+  }
+
+  .investigation-history-entry {
+    margin-top: 6px;
+  }
+
+  .investigation-history-item {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    padding: 16px;
+  }
+
+  .investigation-history-item__action {
+    justify-self: start;
+  }
+
   .investigation-analysis__identity,
   .investigation-analysis__resources {
     grid-template-columns: 1fr;

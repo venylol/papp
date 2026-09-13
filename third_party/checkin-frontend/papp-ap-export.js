@@ -5,6 +5,7 @@ const os = require("node:os");
 const path = require("node:path");
 const vm = require("node:vm");
 const { execFileSync } = require("node:child_process");
+const sea = require("node:sea");
 
 let renderers;
 function getRenderers() {
@@ -37,7 +38,10 @@ function getRenderers() {
   };
   vm.createContext(sandbox);
   for (const file of ["papp-score-png-renderer.js", "papp-standings-png-renderer.js"]) {
-    vm.runInContext(fs.readFileSync(path.join(__dirname, file), "utf8"), sandbox, { filename: file });
+    const source = sea.isSea()
+      ? sea.getAsset(`web/${file}`, "utf8")
+      : fs.readFileSync(path.join(__dirname, file), "utf8");
+    vm.runInContext(source, sandbox, { filename: file });
   }
   renderers = { score: sandbox.PAPP_SCORE_PNG_RENDERER, standings: sandbox.PAPP_STANDINGS_PNG_RENDERER };
   return renderers;

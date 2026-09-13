@@ -153,6 +153,12 @@ class InvestigationBatchManager {
     const id = safeBatchId(batchId);
     const job = this.jobs.get(id);
     if (job) {
+      if (job.status === "completed") {
+        const report = path.join(job.directory, "report.json");
+        if (fs.existsSync(report)) {
+          return { ok: true, ...JSON.parse(fs.readFileSync(report, "utf8")) };
+        }
+      }
       const final = job.status === "completed";
       return { ok: true, ...this.snapshot(job, final) };
     }

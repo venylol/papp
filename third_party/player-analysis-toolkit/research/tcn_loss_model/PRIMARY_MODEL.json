@@ -1,0 +1,18 @@
+{
+  "schema": "tcn-loss-primary-model-v1",
+  "status": "active",
+  "modelFamily": "tcn-loss-profile-ensemble",
+  "modelSchema": "time-plus-four-class-severity-plus-three-class-wld-oq-profile-v1",
+  "inputPolicy": "uniform-no-current-player-loss-history-v1",
+  "profileAblation": "full-31",
+  "trainingGames": 11200,
+  "ensembleMembers": 12,
+  "ensembleManifest": "models/primary_wld_ensemble12/ensemble_manifest.json",
+  "ensembleManifestSha256": "4a6148e3c3af4eecbc01b42ed489d4a85d88d233c868668237352f309ca98fba",
+  "baseCheckpoint": "checkpoints/base/tcn_board_cnn_time_model_best.pt",
+  "selectionReason": "Accepted 11200-game, 12-member full-31 profile ensemble with calibrated ply-39 WLD output; severity ensemble performance remained stable and thinking-time regression was explicitly accepted.",
+  "supersedes": [
+    "outputs/oq_profile_full31_ensemble12_11200_warmstart10_20260805/ensemble_manifest.json",
+    "archive/models/oq_bilateral_3531_ensemble12_20260803"
+  ]
+}

@@ -29,7 +29,8 @@ test("batch report page exposes ordered summary and individual report links", ()
   const script = fs.readFileSync(path.join(portal, "batch-analysis.js"), "utf8");
   assert.match(html, /id="batch-result-list"/);
   assert.match(script, /\/api\/player-investigation\/batch-status\?batchId=/);
-  assert.match(script, /analysis\.html\?runId=/);
+  assert.match(script, /new URLSearchParams\(\{ runId: result\.runId, batchId \}\)/);
+  assert.match(script, /analysis\.html\?\$\{detailParams\.toString\(\)\}/);
   assert.match(script, /result\.error/);
 });
 

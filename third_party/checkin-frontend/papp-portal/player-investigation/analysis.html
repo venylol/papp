@@ -13,20 +13,20 @@
     <link rel="icon" href="../../icons/favicon-32.png" sizes="32x32" />
     <link rel="stylesheet" href="../../styles.css?v=papp-portal.2" />
     <link rel="stylesheet" href="../styles.css?v=papp-portal.2" />
-    <link rel="stylesheet" href="./player-investigation.css?v=papp-portal.13" />
+    <link rel="stylesheet" href="./player-investigation.css?v=papp-portal.15" />
   </head>
 
   <body class="papp-portal-body">
     <div class="papp-portal-shell">
       <header class="papp-portal-header" role="banner">
-        <a class="papp-portal-brand" href="./" aria-label="返回选手调查">
+        <a class="papp-portal-brand" id="analysis-brand" href="./" aria-label="返回选手调查">
           <span class="papp-portal-mark" aria-hidden="true">P</span>
           <span>
             <span class="papp-portal-brand__name">PAPP</span>
             <span class="papp-portal-brand__sub" id="analysis-workflow-name">选手调查任务</span>
           </span>
         </a>
-        <a class="papp-portal-back" href="./">返回对局选择</a>
+        <a class="papp-portal-back" id="analysis-header-back" href="./">返回对局选择</a>
       </header>
 
       <main class="papp-portal-main papp-investigation-main">
@@ -106,7 +106,7 @@
             <button class="papp-portal-action investigation-analysis__terminate" id="btn-analysis-terminate" type="button" disabled>
               终止任务
             </button>
-            <a class="papp-portal-action investigation-analysis__back" href="./">返回调查入口</a>
+            <a class="papp-portal-action investigation-analysis__back" id="analysis-footer-back" href="./">返回调查入口</a>
           </div>
           <p class="investigation-analysis__message" id="analysis-error" role="alert"></p>
         </section>
@@ -114,6 +114,7 @@
 
       <footer class="papp-portal-footer">PAPP · Player investigation workspace</footer>
     </div>
-    <script defer src="./analysis.js?v=papp-portal.6"></script>
+    <script defer src="./rating-presentation.js?v=papp-portal.1"></script>
+    <script defer src="./analysis.js?v=papp-portal.10"></script>
   </body>
 </html>
