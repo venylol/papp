@@ -17,7 +17,7 @@
 
 ## 下载完整 Windows 离线包
 
-请从 [Release](https://github.com/venylol/papp/releases/tag/v2026.09.13-offline) 下载 [PAPP-Offline-20260913-public.zip](https://github.com/venylol/papp/releases/download/v2026.09.13-offline/PAPP-Offline-20260913-public.zip)，完整解压后按上方说明运行。
+请从 [Release](https://github.com/venylol/papp/releases/tag/v2026.09.13) 下载 [PAPP-Offline-20260913-public.zip](https://github.com/venylol/papp/releases/download/v2026.09.13/PAPP-Offline-20260913-public.zip)，完整解压后按上方说明运行。
 
 Git 仓库中保留本次发布的程序文件；Python 运行库、参考数据和大型模型数据随完整 Release ZIP 提供。GitHub 自动生成的 Source code ZIP 不包含这些大文件，不能替代完整离线包。
 
