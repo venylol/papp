@@ -188,6 +188,30 @@ for (const target of stagesWithStart) {
       result.state.playoffRegistration[target.stage + "Pairings"], original.playoffRegistration[target.stage + "Pairings"]);
   });
 }
+test("skip-semifinal entry exports the C preliminary ranking before returning the direct final pairing", async () => {
+  const target = {stage: "placement", round: 3};
+  const {state, opt, pairing} = stageFixture(target);
+  state.tournamentParameters = {hasSemifinalAndFinal: true, skipSemifinal: true};
+  let rankingRead = false;
+  let pairingImportedAfterRanking = false;
+  opt.adapter.getPreliminaryStandings = async () => {
+    rankingRead = true;
+    return ok({operation: "preliminary-standings", standings: [1, 2, 3, 4].map(id => ({id, rank: id}))});
+  };
+  opt.adapter.importPairings = async ctx => {
+    pairingImportedAfterRanking = rankingRead;
+    assert.equal(ctx.stage, "placement");
+    assert.equal(ctx.round, 3);
+    return ok({pairings: [pairing]});
+  };
+  const result = await enterNext(state, target, opt);
+  assert.equal(result.error, undefined);
+  assert.equal(pairingImportedAfterRanking, true);
+  assert.equal(result.state.playoffRegistration.activeStage, "placement");
+  assert.deepEqual(result.state.playoffRegistration.placementPairings.map(row => row.id), [pairing.id]);
+  assert.ok(result.state.standingsSnapshots.some(snapshot => snapshot.kind === "preliminary" && snapshot.source === "papp-c"));
+  assert.deepEqual(opt.calls.filter(call => typeof call === "string"), ["preliminary", "pairings"]);
+});
 for (const target of [stagesWithStart[0], stagesWithStart[2], stagesWithStart[3]]) {
   test(`manual early ${target.stage} entry fills missing start before OQ using simulated clock`, async () => {
     const {state, opt, pairing} = stageFixture(target);

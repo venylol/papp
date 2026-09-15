@@ -39,7 +39,8 @@ function metadata(state) {
 function activeTarget(state) {
   if (state.step === "final-registration") {
     const stage = state.playoffRegistration?.activeStage === "placement" ? "placement" : "semifinal";
-    return { stage, round: countOf(state) + (stage === "placement" ? 2 : 1) };
+    const skipSemifinal = state.tournamentParameters?.skipSemifinal === true;
+    return { stage, round: countOf(state) + (stage === "placement" && !skipSemifinal ? 2 : 1) };
   }
   if (state.step !== "score-helper") return null;
   return { stage: "preliminary", round: Number(state.scoreHelper.activeRound) || 1 };
@@ -124,10 +125,11 @@ async function exportOnce(state, target, kind, result, options) {
 
 function nextTarget(state, target) {
   const count = countOf(state);
+  const skipSemifinal = state.tournamentParameters?.skipSemifinal === true;
   if (target.stage === "preliminary" && target.round < count) return {stage: "preliminary", round: target.round + 1};
-  if (target.stage === "preliminary" && state.tournamentParameters.hasSemifinalAndFinal) return {stage: "semifinal", round: count + 1};
+  if (target.stage === "preliminary" && state.tournamentParameters.hasSemifinalAndFinal) return {stage: skipSemifinal ? "placement" : "semifinal", round: count + 1};
   if (target.stage === "semifinal") return {stage: "placement", round: count + 2};
-  return {stage: "overall", round: count + (state.tournamentParameters.hasSemifinalAndFinal ? 2 : 0)};
+  return {stage: "overall", round: count + (state.tournamentParameters.hasSemifinalAndFinal ? (skipSemifinal ? 1 : 2) : 0)};
 }
 
 async function tick(input, options) {
@@ -234,9 +236,10 @@ async function enterNext(input, target, options) {
       await exportOnce(state, target, "overall", result, options);
       return {state, changed: true, complete: true};
     }
-    if (target.stage === "semifinal") {
+    const skipSemifinal = state.tournamentParameters?.skipSemifinal === true;
+    if (target.stage === "semifinal" || (target.stage === "placement" && skipSemifinal)) {
       const result = success(await adapter.getPreliminaryStandings(context(state, target)), "PAPP 预赛排名读取失败");
-      if (!Array.isArray(result.standings) || result.standings.length < 4) throw new Error("不足 4 名选手，请裁判处理半决赛安排");
+      if (!Array.isArray(result.standings) || result.standings.length < 4) throw new Error("不足 4 名选手，请裁判处理淘汰赛安排");
       storeStandings(state, "preliminary", countOf(state), result, options.nowMs);
       await exportOnce(state, target, "preliminary", result, options);
     }

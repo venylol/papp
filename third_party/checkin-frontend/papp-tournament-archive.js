@@ -48,8 +48,12 @@ async function createArchive(state, { request, directory, now = new Date() }) {
   const stages = Array.from({ length: count }, (_, index) => ({ stage: "preliminary", label: "预赛", round: index + 1,
     pairings: state.scoreHelper.rounds[index]?.pairings || [] }));
   if (state.tournamentParameters?.hasSemifinalAndFinal !== false) {
-    stages.push({ stage: "semifinal", label: "半决赛", round: count + 1, pairings: state.playoffRegistration?.semifinalPairings || [] },
-      { stage: "placement", label: "决赛及三四名赛", round: count + 2, pairings: state.playoffRegistration?.placementPairings || [] });
+    if (state.tournamentParameters?.skipSemifinal === true) {
+      stages.push({ stage: "placement", label: "决赛", round: count + 1, pairings: state.playoffRegistration?.placementPairings || [] });
+    } else {
+      stages.push({ stage: "semifinal", label: "半决赛", round: count + 1, pairings: state.playoffRegistration?.semifinalPairings || [] },
+        { stage: "placement", label: "决赛及三四名赛", round: count + 2, pairings: state.playoffRegistration?.placementPairings || [] });
+    }
   }
   for (const group of stages) {
     const base = { "记录类型": "对局", "阶段": group.label, "轮次": group.round };

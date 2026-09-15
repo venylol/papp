@@ -7,7 +7,7 @@
       content="width=device-width, initial-scale=1.0, viewport-fit=cover"
     />
     <meta name="color-scheme" content="light dark" />
-    <meta name="app-version" content="online-i18n.46" />
+    <meta name="app-version" content="online-i18n.49" />
     <!-- Match Material You surface tones (closer to Pixel OS) -->
     <meta
       name="theme-color"
@@ -26,10 +26,10 @@
     <meta name="application-name" content="比赛签到助手" />
     <title>比赛签到助手（本地保存版）</title>
 
-    <link rel="manifest" href="./manifest.webmanifest?v=online-i18n.46" />
+    <link rel="manifest" href="./manifest.webmanifest?v=online-i18n.49" />
     <link rel="icon" href="./icons/favicon-32.png" sizes="32x32" />
     <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
-    <link rel="stylesheet" href="./styles.css?v=online-i18n.46" />
+    <link rel="stylesheet" href="./styles.css?v=online-i18n.49" />
 
     <style>
       @media (prefers-color-scheme: dark) {
@@ -49,13 +49,13 @@
     </style>
 
     <!-- 仅用于导出 PNG；即使加载失败，其他功能仍可用 -->
-    <script defer src="./vendor/html2canvas.min.js?v=online-i18n.46"></script>
-    <script defer src="./tournament-adapter.js?v=online-i18n.46"></script>
-    <script defer src="./papp-score-png-renderer.js?v=online-i18n.46"></script>
-    <script defer src="./papp-standings-png-renderer.js?v=online-i18n.46"></script>
-    <script defer src="./papp-ap-ui.js?v=online-i18n.46"></script>
-    <script defer src="./app.js?v=online-i18n.46"></script>
-    <script defer src="./checkin-i18n.js?v=online-i18n.46"></script>
+    <script defer src="./vendor/html2canvas.min.js?v=online-i18n.49"></script>
+    <script defer src="./tournament-adapter.js?v=online-i18n.49"></script>
+    <script defer src="./papp-score-png-renderer.js?v=online-i18n.49"></script>
+    <script defer src="./papp-standings-png-renderer.js?v=online-i18n.49"></script>
+    <script defer src="./papp-ap-ui.js?v=online-i18n.49"></script>
+    <script defer src="./app.js?v=online-i18n.49"></script>
+    <script defer src="./checkin-i18n.js?v=online-i18n.49"></script>
   </head>
 
   <body>
@@ -351,6 +351,7 @@
                   <option value="on">开启</option>
                 </select>
                 <div class="field__hint">自动：实际签到人数达到 8 人时启用半决赛和决赛；少于 8 人时关闭。</div>
+                <label class="checkbox-row"><input type="checkbox" id="schedule-skip-semifinal" /> 跳过半决赛</label>
               </div>
             </div>
 

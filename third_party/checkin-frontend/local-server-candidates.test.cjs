@@ -131,6 +131,8 @@ test("candidate sync uses POST /api/state, respects the script delay, and patche
   assert.ok(queued.body.retryAfterMs > 0);
 
   const beforeFlush = await requestJson(`${baseUrl}/api/state`, "GET");
+  assert.equal(beforeFlush.body.scriptWritePending, true);
+  assert.ok(beforeFlush.body.retryAfterMs > 0);
   assert.deepEqual(beforeFlush.body.state.players, [originalPlayer]);
 
   const humanUpdate = await requestJson(`${baseUrl}/api/state`, "POST", {
@@ -157,6 +159,8 @@ test("candidate sync uses POST /api/state, respects the script delay, and patche
   assert.equal(persisted.state.competitionName, "latest human state");
   assert.deepEqual(persisted.state.scoreHelper, { rounds: [] });
   assert.equal(persisted.state.localSync.source, "script");
+  assert.equal(persisted.scriptWritePending, false);
+  assert.equal(persisted.retryAfterMs, 0);
 
   const idempotent = await requestJson(`${baseUrl}/api/state`, "POST", {
     operation: "sync-candidates",

@@ -10,12 +10,12 @@ const ap = require("./papp-ap-tournament.js");
 const { sanitizeScoreHelper, sanitizePlayoffRegistration, sanitizeStandingsSnapshots } = require("./app.js");
 const executable = process.env.PAPP_C_EXE || path.resolve(__dirname, "../../bin/Windows/papp_GB.exe");
 
-function fixture(playoffs) {
+function fixture(playoffs, skipSemifinal = false) {
   return { step: "checkin", ap: {}, ui: { oqPollSeconds: 15 },
     players: ["Alpha", "Bravo", "Charlie", "Delta"].map((displayName, i) => ({
       id: i + 1, displayName, account: `account${i + 1}`, checkedIn: true, platform: "oq",
     })), mapping: { rows: [] }, plannedWithdrawals: [],
-    tournamentParameters: { hasSemifinalAndFinal: playoffs, brightwellConstant: 0 },
+    tournamentParameters: { hasSemifinalAndFinal: playoffs, skipSemifinal, brightwellConstant: 0 },
     scoreHelper: { pappWorkfileId: "ap-isolated-integration", preliminaryRoundCount: 2,
       roundCount: 2, roundCountSource: "manual", activeRound: 1,
       rounds: [1, 2].map(round => ({ round, stage: "preliminary", pairings: [], pending: [], manualPending: [], roundStartAt: "" })) },
@@ -58,25 +58,31 @@ async function completeRound(state, target, harnessValue) {
   }
   harnessValue.options.nowMs += 60_000;
   const result = await ap.tick(state, harnessValue.options);
-  assert.equal(result.error, undefined, result.error);
+  assert.equal(result.error, undefined, `${result.error || ""}; last C call=${JSON.stringify(harnessValue.calls.at(-1))}`);
   assert.ok(result.next, `no next target for ${target.stage} ${target.round}`);
   assert.ok(roundData(result.state, target).pairings.every(p => p.status === "completed" && p.pappReadbackAt));
   const writes = harnessValue.calls.filter(call => call.operation === "write-score-batch" && call.stage === target.stage && call.round === target.round);
   assert.equal(writes.length, 1, "one atomic score batch per round");
-  assert.equal(writes[0].pairings.length, 2);
+  assert.equal(writes[0].pairings.length, target.stage === "placement" && state.tournamentParameters.skipSemifinal ? 1 : 2);
   return result;
 }
 
-for (const playoffs of [false, true]) {
-  test(`AP adapter executes actual Windows C through ${playoffs ? "semifinal, placement and overall" : "preliminary and overall"}`, async () => {
+for (const scenario of [
+  { playoffs: false, skipSemifinal: false, label: "preliminary and overall" },
+  { playoffs: true, skipSemifinal: false, label: "semifinal, placement and overall" },
+  { playoffs: true, skipSemifinal: true, label: "preliminary ranking, direct final and overall" },
+]) {
+  const { playoffs, skipSemifinal, label } = scenario;
+  test(`AP adapter executes actual Windows C through ${label}`, async () => {
     const h = harness();
-    let state = fixture(playoffs);
+    let state = fixture(playoffs, skipSemifinal);
     let target = { stage: "preliminary", round: 1 };
     while (target.stage !== "overall") {
       const entered = await ap.enterNext(state, target, h.options);
       assert.equal(entered.error, undefined, entered.error);
       state = entered.state;
-      assert.equal(roundData(state, target).pairings.length, 2);
+      assert.equal(roundData(state, target).pairings.length,
+        target.stage === "placement" && skipSemifinal ? 1 : 2);
       // The frontend state sanitizer must preserve the server-generated start time.
       if (target.stage === "preliminary") {
         const safe = sanitizeScoreHelper(state.scoreHelper);
@@ -98,7 +104,8 @@ for (const playoffs of [false, true]) {
     assert.ok(overall, "overall C snapshot survives frontend sanitizer");
     assert.equal(overall.standings.length, 4);
     assert.equal(overall.source, "papp-c");
-    assert.equal(h.exports.filter(item => item.kind === "scores").length, playoffs ? 4 : 2);
+    assert.equal(h.exports.filter(item => item.kind === "scores").length,
+      playoffs ? (skipSemifinal ? 3 : 4) : 2);
     assert.equal(h.exports.filter(item => item.kind === "preliminary").length, playoffs ? 1 : 0);
     assert.equal(h.exports.filter(item => item.kind === "overall").length, 1);
     assert.equal(h.calls.filter(call => call.operation === "round-count").length, 1);

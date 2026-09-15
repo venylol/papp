@@ -98,6 +98,57 @@ test("the rebuilt Windows C entry implements automatic/manual round counts and s
   assert.equal(invalid.ok, false);
 });
 
+test("C skip-semifinal flow returns the direct final, validates its stage, and preserves later preliminary ranks", () => {
+  const roster = players(4);
+  const common = {
+    players: roster,
+    preliminaryRoundCount: 1,
+    tournamentParameters: { hasSemifinalAndFinal: true, skipSemifinal: true, brightwellConstant: 0 },
+    skipSemifinal: true,
+    rounds: completePreliminary(roster),
+  };
+  const preliminary = invokePappC({ operation: "preliminary-standings", ...common }).response;
+  const directFinal = invokePappC({
+    operation: "pairings", stage: "placement", round: 2, ...common,
+  }).response;
+  assert.equal(directFinal.ok, true, JSON.stringify(directFinal));
+  assert.equal(directFinal.source, "papp-c");
+  assert.equal(directFinal.stage, "placement");
+  assert.equal(directFinal.round, 2);
+  assert.equal(directFinal.pairings.length, 1);
+  assert.equal(directFinal.pairings[0].phase, "final");
+  assert.deepEqual(
+    [directFinal.pairings[0].blackId, directFinal.pairings[0].whiteId].sort(),
+    preliminary.standings.slice(0, 2).map(row => row.playerId).sort(),
+  );
+
+  const pending = invokePappC({
+    operation: "stage-status", stage: "placement", round: 2,
+    placementPairings: directFinal.pairings, ...common,
+  }).response;
+  assert.equal(pending.canAdvance, false);
+  assert.equal(pending.code, "placement-results-incomplete");
+
+  const completedFinal = [{
+    ...directFinal.pairings[0], blackScore: 32, whiteScore: 32, status: "completed",
+  }];
+  const complete = invokePappC({
+    operation: "stage-status", stage: "placement", round: 2,
+    placementPairings: completedFinal, ...common,
+  }).response;
+  assert.equal(complete.canAdvance, true, JSON.stringify(complete));
+  assert.equal(complete.nextStage, "overall-ranking");
+
+  const overall = invokePappC({
+    operation: "overall-standings", placementPairings: completedFinal, ...common,
+  }).response;
+  assert.equal(overall.stageProgress.complete, true);
+  assert.deepEqual(
+    overall.standings.slice(2).map(row => row.playerId),
+    preliminary.standings.slice(2).map(row => row.playerId),
+  );
+});
+
 test("native C pairing returns mapped player sides and handles an odd field with one Bye", () => {
   const roster = players(5);
   const { response, exitCode } = invokePappC({

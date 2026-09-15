@@ -76,7 +76,7 @@ const PAPP_TOURNAMENT_WORKFILES_ENV = "PAPP_TOURNAMENT_WORKFILES_DIR";
 const HOST = process.env.PAPP_HOST || "127.0.0.1";
 const PORT = Number(process.env.PAPP_PORT || 4175);
 const SERVICE = "papp-local-frontend";
-const SERVICE_VERSION = "papp-local-frontend.30";
+const SERVICE_VERSION = "papp-local-frontend.34";
 const MAX_BODY_BYTES = 8 * 1024 * 1024;
 const SCRIPT_WRITE_GUARD_MS = 3000;
 const SCRIPT_RETRY_ERROR_MS = 1000;
@@ -3515,6 +3515,8 @@ async function handleApi(req, res, pathname) {
         ok: true,
         revision,
         mtimeMs: current.mtimeMs,
+        scriptWritePending: Boolean(pendingScriptWrite),
+        retryAfterMs: pendingScriptWrite ? scriptWriteWaitMs() : 0,
         state: current.state,
       });
     } catch (error) {

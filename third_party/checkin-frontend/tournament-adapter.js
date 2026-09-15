@@ -515,6 +515,7 @@
     const preliminaryCount = preliminaryRoundCountOf(value);
     const maxPreliminary = stage === "preliminary" ? currentRound : preliminaryCount;
     const playoff = objectOf(state.playoffRegistration);
+    const skipSemifinal = objectOf(state.tournamentParameters).skipSemifinal === true;
     const output = [];
 
     rounds.slice(0, maxPreliminary).forEach(function (roundData, index) {
@@ -526,7 +527,9 @@
       const mappedPairings = pairings.map(function (pairing) { return mapPairingAccounts(pairing, context); });
       const nextPreliminary = objectOf(rounds[roundNumber]);
       const nextRoundStartAt = textOf(nextPreliminary.roundStartAt) ||
-        (roundNumber === preliminaryCount ? textOf(playoff.semifinalRoundStartAt) : "");
+        (roundNumber === preliminaryCount
+          ? textOf(skipSemifinal ? playoff.placementRoundStartAt : playoff.semifinalRoundStartAt)
+          : "");
       const roundDataWithWindow = { ...copy(row), pairings: copy(mappedPairings) };
       if (!roundDataWithWindow.roundEndAt && roundNumber < currentRound && nextRoundStartAt) {
         roundDataWithWindow.roundEndAt = nextRoundStartAt;
@@ -540,7 +543,7 @@
     });
 
     if (stage !== "preliminary") {
-      const includeSemifinal = stage === "semifinal" || stage === "placement";
+      const includeSemifinal = !skipSemifinal && (stage === "semifinal" || stage === "placement");
       const includePlacement = stage === "placement";
       if (includeSemifinal && Array.isArray(playoff.semifinalPairings)) {
         const roundNumber = preliminaryCount + 1;
@@ -561,7 +564,7 @@
         });
       }
       if (includePlacement && Array.isArray(playoff.placementPairings)) {
-        const roundNumber = preliminaryCount + 2;
+        const roundNumber = preliminaryCount + (skipSemifinal ? 1 : 2);
         const pairings = roundNumber === currentRound ? currentPairings : playoff.placementPairings;
         const mappedPairings = pairings.map(function (pairing) { return mapPairingAccounts(pairing, context); });
         output.push({
@@ -1557,6 +1560,7 @@
       rounds: rounds,
       presentPlayerIds: checkedIn.map(playerId).filter(Boolean),
       hasSemifinalAndFinal: parameters.hasSemifinalAndFinal,
+      skipSemifinal: parameters.skipSemifinal === true,
       tournamentParameters: parameters,
       brightwellConstant: parameters.brightwellConstant,
       semifinalPairings: semifinalPairings.filter(function (pairing) {

@@ -411,6 +411,7 @@
       hasSemifinalAndFinal: semifinalAndFinalMode === "on" ||
         (semifinalAndFinalMode === "auto" &&
           checkedInPlayerCount >= AUTOMATIC_SEMIFINALS_MIN_PLAYERS),
+      skipSemifinal: source.skipSemifinal === true,
       brightwellConstant:
         Number.isFinite(brightwellConstant) && brightwellConstant >= 0
           ? brightwellConstant
@@ -623,6 +624,7 @@
   let localSyncLastErrorAt = 0;
   let localSyncPollTimer = null;
   let localSyncEventSource = null;
+  let localSyncPendingScriptUntil = 0;
   let oqScorePollEnabled = false;
   let oqScorePollTimer = null;
   let oqScorePollInFlight = false;
@@ -984,6 +986,21 @@
     return copy;
   }
 
+  function updateLocalSyncPendingScriptStatus(result) {
+    if (!result || typeof result !== "object") return;
+    const hasPendingStatus = Object.prototype.hasOwnProperty.call(
+      result,
+      "scriptWritePending",
+    );
+    const pending = result.queued === true || result.scriptWritePending === true;
+    if (pending) {
+      const retryAfterMs = Math.max(0, Number(result.retryAfterMs) || 0);
+      localSyncPendingScriptUntil = now() + retryAfterMs;
+    } else if (hasPendingStatus) {
+      localSyncPendingScriptUntil = 0;
+    }
+  }
+
   function queueLocalSyncPush(options = {}) {
     if (!LOCAL_SYNC_ENABLED || localSyncApplyingRemote) return;
     if (!state || Number(state.version) !== STORAGE_VERSION) return;
@@ -1026,6 +1043,7 @@
             `HTTP ${response.status}`,
         );
       }
+      updateLocalSyncPendingScriptStatus(result);
       localSyncLastRevision = Number(result.revision);
       setLocalSyncStatus(
         result.queued ? "busy" : "ok",
@@ -1118,6 +1136,7 @@
         );
       }
 
+      updateLocalSyncPendingScriptStatus(result);
       const revisionValue = Number(result.revision);
       if (
         Number.isFinite(revisionValue) &&
@@ -1125,7 +1144,7 @@
         !options.force
       ) {
         setLocalSyncStatus("ok", "本地同步：已连接");
-        return;
+        return result;
       }
 
       if (!result.state) {
@@ -1134,7 +1153,7 @@
         if (options.pushIfEmpty !== false) {
           queueLocalSyncPush({ immediate: true });
         }
-        return;
+        return result;
       }
 
       const applied = applyRemoteState(result.state, {
@@ -1143,8 +1162,10 @@
       if (applied && Number.isFinite(revisionValue)) {
         localSyncLastRevision = revisionValue;
       }
+      return result;
     } catch (error) {
       reportLocalSyncError("读取共享状态失败", error);
+      return null;
     }
   }
 
@@ -4431,11 +4452,27 @@
   const dialogMessage = $("#dialog-message");
   const dialogButtons = $("#dialog-buttons");
 
-  function closeDialog() {
+  let dialogSequence = 0;
+  let activeDialogToken = 0;
+  let dialogDismissible = true;
+
+  function closeDialog(options = {}) {
+    if (options.token && options.token !== activeDialogToken) return false;
+    if (!dialogDismissible && options.force !== true) return false;
     if (dialogBackdrop) dialogBackdrop.classList.add("hidden");
+    activeDialogToken = 0;
+    dialogDismissible = true;
+    return true;
   }
 
-  function showDialog({ title, message, contentNode, buttons, wide = false }) {
+  function showDialog({
+    title,
+    message,
+    contentNode,
+    buttons,
+    wide = false,
+    dismissible = true,
+  }) {
     if (!dialogBackdrop || !dialogTitle || !dialogMessage || !dialogButtons) {
       const fallback = [
         title || "提示",
@@ -4448,9 +4485,12 @@
       } else {
         console.warn("对话框节点缺失：", fallback);
       }
-      return;
+      return 0;
     }
 
+    const dialogToken = ++dialogSequence;
+    activeDialogToken = dialogToken;
+    dialogDismissible = dismissible !== false;
     dialogTitle.textContent = title || "提示";
     const dialogPanel = dialogBackdrop.querySelector(".dialog");
     if (dialogPanel) dialogPanel.classList.toggle("dialog--large", Boolean(wide));
@@ -4495,6 +4535,7 @@
     });
 
     dialogBackdrop.classList.remove("hidden");
+    return dialogToken;
   }
 
   function showAlert(title, message) {
@@ -4621,6 +4662,7 @@
   const scheduleCheckinDeadlineInput = $("#schedule-checkin-deadline");
   const scheduleCompetitionStartInput = $("#schedule-competition-start");
   const scheduleSemifinalAndFinalInput = $("#schedule-semifinal-and-final");
+  const scheduleSkipSemifinalInput = $("#schedule-skip-semifinal");
   const scheduleBrightwellConstantInput = $("#schedule-brightwell-constant");
   const scheduleValidation = $("#schedule-validation");
   const btnScheduleBack = $("#btn-schedule-back");
@@ -5571,6 +5613,74 @@
     return snapshot;
   }
 
+  function localSyncVerificationWaitMs(status) {
+    const serverWait = status && status.scriptWritePending === true
+      ? Math.max(0, Number(status.retryAfterMs) || 0)
+      : 0;
+    const rememberedWait = Math.max(0, localSyncPendingScriptUntil - now());
+    const localEditWait = Math.max(
+      0,
+      lastLocalEditAt + LOCAL_SYNC_USER_WRITE_GUARD_MS - now(),
+    );
+    return Math.max(serverWait, rememberedWait, localEditWait);
+  }
+
+  function updatePappVerificationDialog(content, waitMs) {
+    if (!content) return;
+    if (waitMs > 0) {
+      const seconds = Math.ceil(waitMs / 100) / 10;
+      content.textContent =
+        `正在等待比分与比赛进度同步，预计还需 ${seconds.toFixed(1)} 秒…`;
+    } else {
+      content.textContent = "同步保护时间已结束，正在确认最新比赛状态…";
+    }
+  }
+
+  async function verifyPappSyncBeforeAdvance() {
+    if (!LOCAL_SYNC_ENABLED) return;
+    if (!(await persistCurrentStateToLocalService())) {
+      throw new Error("当前比赛状态尚未保存，不能进入下一轮");
+    }
+
+    let status = await fetchLocalSyncState({
+      force: true,
+      showToast: false,
+      pushIfEmpty: false,
+    });
+    if (!status) throw new Error("无法读取本地同步状态，不能进入下一轮");
+
+    let waitMs = localSyncVerificationWaitMs(status);
+    if (status.scriptWritePending !== true && waitMs <= 0) return;
+
+    const content = document.createElement("div");
+    content.setAttribute("role", "status");
+    content.setAttribute("aria-live", "polite");
+    updatePappVerificationDialog(content, waitMs);
+    const dialogToken = showDialog({
+      title: "正在检验 PAPP",
+      contentNode: content,
+      buttons: [],
+      dismissible: false,
+    });
+
+    try {
+      while (status.scriptWritePending === true || waitMs > 0) {
+        const delayMs = waitMs > 0 ? Math.min(waitMs, 250) : 25;
+        await new Promise((resolve) => window.setTimeout(resolve, delayMs));
+        status = await fetchLocalSyncState({
+          force: true,
+          showToast: false,
+          pushIfEmpty: false,
+        });
+        if (!status) throw new Error("无法确认本地同步已经完成");
+        waitMs = localSyncVerificationWaitMs(status);
+        updatePappVerificationDialog(content, waitMs);
+      }
+    } finally {
+      closeDialog({ force: true, token: dialogToken });
+    }
+  }
+
   function renderFinalRegistration(preliminaryResult, registration) {
     if (!finalRegistrationContent || !registration) return;
     const helper = ensureScoreHelper();
@@ -5579,8 +5689,9 @@
       ? registration.semifinalPairings
       : registration.placementPairings;
     const pairings = Array.isArray(rows) ? rows : [];
-    const round = helper.preliminaryRoundCount + (activeStage === "semifinal" ? 1 : 2);
-    const title = activeStage === "semifinal" ? "半决赛" : "决赛与三四名赛";
+    const round = scoreStageRound(activeStage);
+    const directFinal = activeStage === "placement" && skipsSemifinal();
+    const title = activeStage === "semifinal" ? "半决赛" : directFinal ? "决赛" : "决赛与三四名赛";
     const startAt = registration[playoffRoundStartField(activeStage)];
     const progress = scorePairingsProgress(pairings);
     const qualifiers = Array.isArray(preliminaryResult && preliminaryResult.standings)
@@ -5653,18 +5764,18 @@
       if (!preliminaryPlayers.length) {
         setTournamentStageStatus(finalRegistrationStatus, finalRegistrationContent, "没有已签到选手可进入淘汰赛。", "empty");
         renderFinalRegistrationSummary(ensurePlayoffRegistration());
-        renderScorePairings([], { stage: "semifinal", round: preliminaryRoundCount + 1, title: "半决赛" }, finalRegistrationPairings);
+        renderScorePairings([], { stage: skipsSemifinal() ? "placement" : "semifinal", round: preliminaryRoundCount + 1, title: skipsSemifinal() ? "决赛" : "半决赛" }, finalRegistrationPairings);
         return;
       }
       if (!preliminaryResult.progress || preliminaryResult.progress.complete !== true) {
         setTournamentStageStatus(
           finalRegistrationStatus,
           finalRegistrationContent,
-          "预赛配对或比分尚未全部完成，暂不生成半决赛。",
+          skipsSemifinal() ? "预赛配对或比分尚未全部完成，暂不生成决赛。" : "预赛配对或比分尚未全部完成，暂不生成半决赛。",
           "warning",
         );
         renderFinalRegistrationSummary(ensurePlayoffRegistration());
-        renderScorePairings([], { stage: "semifinal", round: preliminaryRoundCount + 1, title: "半决赛" }, finalRegistrationPairings);
+        renderScorePairings([], { stage: skipsSemifinal() ? "placement" : "semifinal", round: preliminaryRoundCount + 1, title: skipsSemifinal() ? "决赛" : "半决赛" }, finalRegistrationPairings);
         return;
       }
       if (preliminaryResult.source !== "papp-c") {
@@ -5672,14 +5783,30 @@
       }
       storeStandingsSnapshot("preliminary", preliminaryRoundCount, preliminaryResult);
       if (preliminaryPlayers.length < 4) {
-        setTournamentStageStatus(finalRegistrationStatus, finalRegistrationContent, "半决赛至少需要 4 名已签到选手。", "empty");
+        setTournamentStageStatus(finalRegistrationStatus, finalRegistrationContent, "淘汰赛至少需要 4 名已签到选手。", "empty");
         renderFinalRegistrationSummary(ensurePlayoffRegistration(), preliminaryResult);
-        renderScorePairings([], { stage: "semifinal", round: preliminaryRoundCount + 1, title: "半决赛" }, finalRegistrationPairings);
+        renderScorePairings([], { stage: skipsSemifinal() ? "placement" : "semifinal", round: preliminaryRoundCount + 1, title: skipsSemifinal() ? "决赛" : "半决赛" }, finalRegistrationPairings);
         return;
       }
 
       let registration = ensurePlayoffRegistration();
-      if (!registration.semifinalPairings.length) {
+      if (skipsSemifinal() && !registration.placementPairings.length) {
+        const finalResult = await invokeTournamentAdapter("importPairings", {
+          round: preliminaryRoundCount + 1,
+          stage: "placement",
+          mode: "advance-playoff-stage",
+          roundData: { round: preliminaryRoundCount + 1, stage: "placement", pairings: [] },
+        });
+        if (!stageLoadIsCurrent(sequence, "final-registration")) return;
+        if (finalResult && finalResult.ok === false) {
+          throw new Error(adapterResultMessage(finalResult, "PAPP 决赛配对生成失败"));
+        }
+        if (finalResult.source !== "papp-c") throw new Error("决赛配对不是由 PAPP C 生成");
+        const pairings = resultPairings(finalResult);
+        if (!pairings.length) throw new Error("PAPP 适配器没有返回决赛配对");
+        setPlayoffPairings(preliminaryRoundCount + 1, pairings, { stage: "placement" });
+        registration = ensurePlayoffRegistration();
+      } else if (!skipsSemifinal() && !registration.semifinalPairings.length) {
         const semifinalResult = await invokeTournamentAdapter("importPairings", {
           round: preliminaryRoundCount + 1,
           mode: "playoff-registration",
@@ -5693,6 +5820,12 @@
         setPlayoffPairings(preliminaryRoundCount + 1, pairings);
         registration = ensurePlayoffRegistration();
       }
+      if (skipsSemifinal() && registration.activeStage !== "placement") {
+        registration.activeStage = "placement";
+        registration.updatedAt = now();
+        state.playoffRegistration = registration;
+        scheduleSave({ source: "script" });
+      }
 
       if (!stageLoadIsCurrent(sequence, "final-registration")) return;
       renderFinalRegistration(preliminaryResult, registration);
@@ -5700,7 +5833,7 @@
       const statusResult = assertAdapterSuccess(
         await invokeTournamentAdapter("getStageStatus", {
           stage: activeStage,
-          round: preliminaryRoundCount + (activeStage === "semifinal" ? 1 : 2),
+          round: scoreStageRound(activeStage),
         }),
         "PAPP 淘汰赛阶段状态读取失败",
       );
@@ -5708,8 +5841,12 @@
       const canAdvance = statusResult.canAdvance === true;
       const statusText = activeStage === "placement"
         ? canAdvance
-          ? "决赛与三四名赛比分已由 PAPP C 读回确认，可以生成最终排名。"
-          : "请完成决赛与三四名赛比分，并批量写入后等待 PAPP C 读回确认。"
+          ? skipsSemifinal()
+            ? "决赛比分已由 PAPP C 读回确认，可以生成最终排名。"
+            : "决赛与三四名赛比分已由 PAPP C 读回确认，可以生成最终排名。"
+          : skipsSemifinal()
+            ? "预赛排名已确认；请完成决赛比分，并批量写入后等待 PAPP C 读回确认。"
+            : "请完成决赛与三四名赛比分，并批量写入后等待 PAPP C 读回确认。"
         : canAdvance
           ? "半决赛比分已由 PAPP C 读回确认；可以生成决赛与三四名赛配对。"
           : `已生成 ${registration.semifinalPairings.length} 场半决赛；录入比分后按 Shift + Enter 批量写入。`;
@@ -5728,14 +5865,15 @@
         "error",
       );
       renderFinalRegistrationSummary(ensurePlayoffRegistration());
-      renderScorePairings([], { stage: "semifinal", round: ensureScoreHelper().preliminaryRoundCount + 1, title: "半决赛" }, finalRegistrationPairings);
+      const fallbackStage = skipsSemifinal() ? "placement" : "semifinal";
+      renderScorePairings([], { stage: fallbackStage, round: scoreStageRound(fallbackStage), title: skipsSemifinal() ? "决赛" : "半决赛" }, finalRegistrationPairings);
     }
   }
 
   async function advancePreliminaryRegistration() {
     if (scoreStageAdvanceInFlight) return;
-    const current = activeScoreRegistration("score-helper");
-    const helper = ensureScoreHelper();
+    let current = activeScoreRegistration("score-helper");
+    let helper = ensureScoreHelper();
     scoreStageAdvanceInFlight = true;
     setBtnBusy(btnOpenPreliminaryStandings, true, "正在生成下一轮…", "进入下一轮");
     updateScoreRegistrationControls();
@@ -5768,6 +5906,9 @@
           showSnackbar("本轮排名快照未保存，可稍后从右上角重新读取。", 3200);
         }
       }
+      await verifyPappSyncBeforeAdvance();
+      current = activeScoreRegistration("score-helper");
+      helper = ensureScoreHelper();
       if (current.round >= helper.preliminaryRoundCount) {
         if (hasPlayoffs) navigateTournamentStep("final-registration");
         else openLiveStandings("overall");
@@ -5816,11 +5957,11 @@
 
   async function advanceFinalRegistration() {
     if (scoreStageAdvanceInFlight) return;
-    const registration = ensurePlayoffRegistration();
-    const stage = registration.activeStage === "placement" ? "placement" : "semifinal";
-    const current = activeScoreRegistration("final-registration");
-    const helper = ensureScoreHelper();
-    const round = helper.preliminaryRoundCount + 2;
+    let registration = ensurePlayoffRegistration();
+    let stage = registration.activeStage === "placement" ? "placement" : "semifinal";
+    let current = activeScoreRegistration("final-registration");
+    let helper = ensureScoreHelper();
+    let round = scoreStageRound(stage);
     scoreStageAdvanceInFlight = true;
     const busyLabel = stage === "placement" ? "正在读取最终排名…" : "正在生成决赛配对…";
     const readyLabel = stage === "placement" ? "查看最终排名" : "生成决赛与三四名赛配对";
@@ -5828,7 +5969,9 @@
     setTournamentStageStatus(
       finalRegistrationStatus,
       finalRegistrationContent,
-      "半决赛比分已确认，正在生成决赛与三四名赛配对…",
+      stage === "placement"
+        ? skipsSemifinal() ? "正在读取决赛状态…" : "正在读取决赛与三四名赛状态…"
+        : "半决赛比分已确认，正在生成决赛与三四名赛配对…",
       "loading",
     );
     updateScoreRegistrationControls();
@@ -5847,12 +5990,20 @@
           : stageStatus.code === "semifinal-results-incomplete"
             ? "请完成两场半决赛并等待 PAPP C 读回确认。"
             : stageStatus.code === "placement-results-incomplete"
-              ? "请完成决赛与三四名赛并等待 PAPP C 读回确认。"
+              ? skipsSemifinal()
+                ? "请完成决赛并等待 PAPP C 读回确认。"
+                : "请完成决赛与三四名赛并等待 PAPP C 读回确认。"
               : "当前淘汰赛阶段尚不能推进，请检查 PAPP C 返回的阶段状态。";
         setTournamentStageStatus(finalRegistrationStatus, finalRegistrationContent, message, "warning");
         showSnackbar(message, 2600);
         return;
       }
+      await verifyPappSyncBeforeAdvance();
+      registration = ensurePlayoffRegistration();
+      stage = registration.activeStage === "placement" ? "placement" : "semifinal";
+      current = activeScoreRegistration("final-registration");
+      helper = ensureScoreHelper();
+      round = scoreStageRound(stage);
       if (stage === "placement") {
         openLiveStandings("overall");
         return;
@@ -5878,7 +6029,7 @@
       if (result.readOnly === true) throw new Error("旧版淘汰赛记录为只读，不能转换为 PAPP C 配对");
       const pairings = resultPairings(result);
       if (!pairings.length) throw new Error("PAPP 没有返回决赛和三四名赛配对");
-      setPlayoffPairings(round, pairings);
+      setPlayoffPairings(round, pairings, { stage: "placement" });
       const updated = ensurePlayoffRegistration();
       renderFinalRegistration(null, updated);
       setTournamentStageStatus(
@@ -6058,6 +6209,11 @@
 
   function hasSemifinalAndFinal() {
     return ensureTournamentParametersState().hasSemifinalAndFinal;
+  }
+
+  function skipsSemifinal() {
+    const parameters = ensureTournamentParametersState();
+    return parameters.hasSemifinalAndFinal && parameters.skipSemifinal === true;
   }
 
   function normalizeTournamentStep(step) {
@@ -7588,6 +7744,10 @@
         tournamentParameters.semifinalAndFinalMode,
       );
     }
+    if (scheduleSkipSemifinalInput && document.activeElement !== scheduleSkipSemifinalInput) {
+      scheduleSkipSemifinalInput.checked = tournamentParameters.skipSemifinal === true;
+      scheduleSkipSemifinalInput.disabled = state.step !== "schedule" && state.step !== "import";
+    }
     if (
       scheduleBrightwellConstantInput &&
       document.activeElement !== scheduleBrightwellConstantInput
@@ -7631,6 +7791,7 @@
             semifinalAndFinalMode: scheduleSemifinalAndFinalInput
               ? scheduleSemifinalAndFinalInput.value
               : current.semifinalAndFinalMode,
+            skipSemifinal: scheduleSkipSemifinalInput ? scheduleSkipSemifinalInput.checked : current.skipSemifinal,
             brightwellConstant,
           },
           state.players,
@@ -9927,7 +10088,7 @@
     const playoff = ensurePlayoffRegistration();
     stagePairings.push(
       { stage: "semifinal", round: helper.preliminaryRoundCount + 1, pairings: playoff.semifinalPairings },
-      { stage: "placement", round: helper.preliminaryRoundCount + 2, pairings: playoff.placementPairings },
+      { stage: "placement", round: scoreStageRound("placement"), pairings: playoff.placementPairings },
     );
     let changed = false;
     for (const group of stagePairings) {
@@ -12110,19 +12271,24 @@
     return state.playoffRegistration;
   }
 
-  function setPlayoffPairings(roundNumber, pairings) {
+  function setPlayoffPairings(roundNumber, pairings, options = {}) {
     const helper = ensureScoreHelper();
     const round = Math.trunc(Number(roundNumber));
+    const requestedStage = normalizeWhitespace(options.stage).toLowerCase();
+    const stage = requestedStage === "semifinal" || requestedStage === "placement"
+      ? requestedStage
+      : round === helper.preliminaryRoundCount + 1 && !skipsSemifinal()
+        ? "semifinal"
+        : "placement";
     if (!Number.isFinite(round) || !Array.isArray(pairings)) {
       throw new Error("淘汰赛轮次或配对数据无效");
     }
-    if (round !== helper.preliminaryRoundCount + 1 &&
-        round !== helper.preliminaryRoundCount + 2) {
+    if (round !== scoreStageRound(stage)) {
       throw new Error("淘汰赛轮次必须紧接预赛轮数");
     }
 
     const registration = ensurePlayoffRegistration();
-    const previousPairings = round === helper.preliminaryRoundCount + 1
+    const previousPairings = stage === "semifinal"
       ? registration.semifinalPairings
       : registration.placementPairings;
     if (previousPairings.some(isLegacyScorePairing)) return deepClone(previousPairings);
@@ -12142,7 +12308,7 @@
       }
       return next;
     });
-    if (round === helper.preliminaryRoundCount + 1) {
+    if (stage === "semifinal") {
       registration.activeStage = "semifinal";
       registration.semifinalPairings = normalized;
       registration.placementPairings = [];
@@ -12932,7 +13098,7 @@
   function scoreStageRound(stage) {
     const helper = ensureScoreHelper();
     if (stage === "semifinal") return helper.preliminaryRoundCount + 1;
-    if (stage === "placement") return helper.preliminaryRoundCount + 2;
+    if (stage === "placement") return helper.preliminaryRoundCount + (skipsSemifinal() ? 1 : 2);
     return helper.activeRound;
   }
 
@@ -18321,8 +18487,8 @@
       setRoundPairings: (roundNumber, pairings, options = {}) =>
         setRoundPairings(roundNumber, pairings, options),
       getPlayoffRegistration: () => deepClone(ensurePlayoffRegistration()),
-      setPlayoffPairings: (roundNumber, pairings) =>
-        setPlayoffPairings(roundNumber, pairings),
+      setPlayoffPairings: (roundNumber, pairings, options = {}) =>
+        setPlayoffPairings(roundNumber, pairings, options),
       setActivePlayoffStage: (stage) => setActivePlayoffStage(stage),
       mergeOqPollResult: (roundNumber, result, options = {}) =>
         mergeOqPollResult(roundNumber, result, options),

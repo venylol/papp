@@ -55,8 +55,8 @@ DEFAULT_ENGINE_EXE = (
     PAPP_ROOT
     / "vendor"
     / "engines"
-    / "Egaroucid_for_Console_7_8_1_Windows_AVX512_AMD"
-    / "Egaroucid_for_Console_7_8_1_AVX512_AMD.exe"
+    / "Egaroucid_for_Console_7_8_1_Windows_SIMD"
+    / "Egaroucid_for_Console_7_8_1_SIMD.exe"
 )
 MOVE_RE = re.compile(r"^[a-h][1-8]$", re.IGNORECASE)
 _LOCK_HANDLE: Any = None

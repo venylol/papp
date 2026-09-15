@@ -1224,6 +1224,22 @@ test("OQ polling uses mappings without a group nickname and includes earlier tou
     ["报名丙", "oq-c"],
     ["报名戊", "oq-e"],
   ]);
+
+  state.tournamentParameters = { hasSemifinalAndFinal: true, skipSemifinal: true };
+  await adapter.pollOqRound({
+    round: 3,
+    stage: "placement",
+    roundStartAt: "2026-09-12T12:00:00Z",
+    roundData: { stage: "placement", pairings: [placement] },
+    pairings: [placement],
+    state,
+  });
+  assert.deepEqual(requestPayload.egRounds.map((group) => [group.round, group.stage]), [
+    [1, "preliminary"],
+    [2, "preliminary"],
+    [3, "placement"],
+  ]);
+  assert.equal(requestPayload.egRounds[1].roundData.roundEndAt, "2026-09-12T12:00:00Z");
 });
 
 test("legacy JS pairings remain read-only history after a candidate is removed", async () => {
